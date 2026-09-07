@@ -14,6 +14,9 @@ import lojaRoutes from './routes/loja.js';
 import analyticsRoutes from './routes/analytics.js';
 import automacoesRoutes from './routes/automacoes.js';
 import suporteRoutes from './routes/suporte.js';
+import sitesRoutes from './routes/sites.js';
+import categoriasRoutes from './routes/categorias.js';
+import assinaturasRoutes from './routes/assinaturas.js';
 
 dotenv.config();
 
@@ -35,6 +38,9 @@ app.use('/api/loja', lojaRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/automacoes', automacoesRoutes);
 app.use('/api/suporte', suporteRoutes);
+app.use('/api/sites', sitesRoutes);
+app.use('/api/categorias', categoriasRoutes);
+app.use('/api/assinaturas', assinaturasRoutes);
 
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {
