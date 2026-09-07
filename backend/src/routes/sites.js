@@ -1,10 +1,10 @@
 import express from 'express';
-import { supabase } from '../lib/supabase.js';
-import { autenticar } from '../middleware/auth.js';
+import { supabase } from '../config/supabase.js';
+import { requireAuth } from '../middleware/auth.js';
 
 const router = express.Router();
 
-router.use(autenticar);
+router.use(requireAuth);
 
 router.get('/', async (req, res) => {
   const { data, error } = await supabase
