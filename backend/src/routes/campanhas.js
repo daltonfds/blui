@@ -6,7 +6,6 @@ import { criarCampanhaCompleta } from '../lib/meta.js';
 const router = Router();
 router.use(requireAuth);
 
-// Liga uma conta de anúncios (chamado depois do OAuth do Facebook no frontend)
 router.post('/contas', async (req, res) => {
   const payload = { ...req.body, user_id: req.user.id };
   const { data, error } = await supabase
@@ -29,9 +28,16 @@ router.get('/contas', async (req, res) => {
   res.json(data);
 });
 
-// Cria campanha automática assim que o assinante confirma o wizard
 router.post('/criar-automatica', async (req, res) => {
-  const { contaAnuncioId, produtoId, orcamentoDiario, linkDestino, imagemUrl } = req.body;
+  const {
+    contaAnuncioId,
+    produtoId,
+    orcamentoDiario,
+    linkDestino,
+    imagemUrl,
+    listaIncluirId,
+    listaExcluirId,
+  } = req.body;
 
   const { data: conta, error: erroConta } = await supabase
     .from('contas_anuncio')
@@ -51,7 +57,10 @@ router.post('/criar-automatica', async (req, res) => {
 
   if (erroProduto || !produto) return res.status(404).json({ erro: 'Produto não encontrado.' });
 
-  // Regra: só usar público avançado (segmentado pelos dados coletados) com >= 100 contactos
+  // Busca os números das listas escolhidas (incluir/excluir), se o utilizador selecionou alguma
+  const numerosIncluir = listaIncluirId ? await buscarNumerosDaLista(listaIncluirId, req.user.id) : [];
+  const numerosExcluir = listaExcluirId ? await buscarNumerosDaLista(listaExcluirId, req.user.id) : [];
+
   const { count } = await supabase
     .from('contactos')
     .select('id', { count: 'exact', head: true })
@@ -74,6 +83,8 @@ router.post('/criar-automatica', async (req, res) => {
         linkDestino,
         imagemUrl,
         publico,
+        numerosIncluir,
+        numerosExcluir,
       },
     });
 
@@ -92,6 +103,8 @@ router.post('/criar-automatica', async (req, res) => {
         meta_adset_id: resultado.adsetId,
         meta_creative_id: resultado.creativeId,
         meta_ad_id: resultado.adId,
+        lista_incluir_id: listaIncluirId || null,
+        lista_excluir_id: listaExcluirId || null,
       })
       .select()
       .single();
@@ -113,6 +126,18 @@ router.get('/', async (req, res) => {
   if (error) return res.status(400).json({ erro: error.message });
   res.json(data);
 });
+
+async function buscarNumerosDaLista(listaId, userId) {
+  const { data, error } = await supabase
+    .from('listas_numeros')
+    .select('numeros')
+    .eq('id', listaId)
+    .eq('user_id', userId)
+    .single();
+
+  if (error || !data) return [];
+  return (data.numeros || []).map((n) => n.numero);
+}
 
 async function construirPublicoSegmentado(userId) {
   const { data: compradores } = await supabase

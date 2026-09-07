@@ -1,13 +1,38 @@
 import React, { useEffect, useState } from 'react';
 import LayoutApp from '../components/LayoutApp.jsx';
 import { api } from '../lib/api.js';
+import { supabase } from '../lib/supabaseClient.js';
 import { IconBolt } from '../components/Icons.jsx';
+
+const SUPABASE_URL = 'https://hckflwxnfcfbypmvdksy.supabase.co';
+const ANON_KEY =
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhja2Zsd3huZmNmYnlwbXZka3N5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg2MTM0NjAsImV4cCI6MjEwNDE4OTQ2MH0.UJ2y1iGbirOTmN8uRDke-xwuunhnbv7WGzE1rU-T2Sg';
+
+async function buscarListasNumeros() {
+  const { data: { session } } = await supabase.auth.getSession();
+  const resposta = await fetch(`${SUPABASE_URL}/functions/v1/numeros-api?action=listas`, {
+    headers: {
+      Authorization: `Bearer ${session?.access_token}`,
+      apikey: ANON_KEY,
+    },
+  });
+  if (!resposta.ok) return [];
+  return resposta.json();
+}
 
 export default function Campanhas() {
   const [contas, setContas] = useState([]);
   const [produtos, setProdutos] = useState([]);
   const [campanhas, setCampanhas] = useState([]);
-  const [form, setForm] = useState({ contaAnuncioId: '', produtoId: '', orcamentoDiario: 5, linkDestino: '' });
+  const [listasNumeros, setListasNumeros] = useState([]);
+  const [form, setForm] = useState({
+    contaAnuncioId: '',
+    produtoId: '',
+    orcamentoDiario: 5,
+    linkDestino: '',
+    listaIncluirId: '',
+    listaExcluirId: '',
+  });
   const [aCriar, setACriar] = useState(false);
   const [mensagem, setMensagem] = useState('');
 
@@ -15,6 +40,7 @@ export default function Campanhas() {
     api.get('/api/campanhas/contas').then(setContas).catch(() => {});
     api.get('/api/produtos').then(setProdutos).catch(() => {});
     api.get('/api/campanhas').then(setCampanhas).catch(() => {});
+    buscarListasNumeros().then(setListasNumeros).catch(() => {});
   }, []);
 
   async function criarCampanha(e) {
@@ -22,7 +48,12 @@ export default function Campanhas() {
     setACriar(true);
     setMensagem('');
     try {
-      const nova = await api.post('/api/campanhas/criar-automatica', form);
+      const payload = {
+        ...form,
+        listaIncluirId: form.listaIncluirId || null,
+        listaExcluirId: form.listaExcluirId || null,
+      };
+      const nova = await api.post('/api/campanhas/criar-automatica', payload);
       setCampanhas([nova, ...campanhas]);
       setMensagem('Campanha criada em modo pausado — revê e ativa no Gestor de Anúncios.');
     } catch (err) {
@@ -68,6 +99,24 @@ export default function Campanhas() {
           <Campo label="Link de destino (WhatsApp/loja)">
             <input value={form.linkDestino} onChange={(e) => setForm({ ...form, linkDestino: e.target.value })} placeholder="https://wa.me/258..." />
           </Campo>
+
+          <Campo label="Incluir números (público personalizado)">
+            <select value={form.listaIncluirId} onChange={(e) => setForm({ ...form, listaIncluirId: e.target.value })}>
+              <option value="">Nenhuma (não segmentar por números)</option>
+              {listasNumeros.map((l) => (
+                <option key={l.id} value={l.id}>{l.nome} — {l.total} números</option>
+              ))}
+            </select>
+          </Campo>
+          <Campo label="Excluir números">
+            <select value={form.listaExcluirId} onChange={(e) => setForm({ ...form, listaExcluirId: e.target.value })}>
+              <option value="">Nenhuma (não excluir ninguém)</option>
+              {listasNumeros.map((l) => (
+                <option key={l.id} value={l.id}>{l.nome} — {l.total} números</option>
+              ))}
+            </select>
+          </Campo>
+
           <div className="sm:col-span-2">
             <button
               type="submit"
