@@ -14,6 +14,9 @@ const PAISES = [
   { valor: 'PT', nome: 'Portugal (+351)' },
 ];
 
+const MAX_IMAGENS = 100;
+const MAX_TAMANHO_MB = 10;
+
 async function chamarNumerosApi(action, { method = 'GET', body, isFormData, query = '' } = {}) {
   const { data: { session } } = await supabase.auth.getSession();
   const resposta = await fetch(
@@ -35,11 +38,16 @@ async function chamarNumerosApi(action, { method = 'GET', body, isFormData, quer
 
 export default function Numeros() {
   const [listas, setListas] = useState([]);
+  const [listaAberta, setListaAberta] = useState(null); // id da lista expandida
+  const [conteudoListaAberta, setConteudoListaAberta] = useState(null);
+  const [aCarregarConteudo, setACarregarConteudo] = useState(false);
+
   const [texto, setTexto] = useState('');
   const [nomeLista, setNomeLista] = useState('');
   const [paisPadrao, setPaisPadrao] = useState('MZ');
+
   const [preview, setPreview] = useState(null);
-  const [carregandoOcr, setCarregandoOcr] = useState(false);
+  const [progresso, setProgresso] = useState(null); // { atual, total }
   const [erro, setErro] = useState('');
   const [sucesso, setSucesso] = useState('');
 
@@ -68,23 +76,59 @@ export default function Numeros() {
     }
   }
 
-  async function lerImagem(e) {
-    const ficheiro = e.target.files[0];
-    if (!ficheiro) return;
-    setCarregandoOcr(true); setErro(''); setPreview(null);
-    try {
-      const formData = new FormData();
-      formData.append('imagem', ficheiro);
-      formData.append('paisPadrao', paisPadrao);
-      const dados = await chamarNumerosApi('imagem', { method: 'POST', body: formData, isFormData: true });
-      setPreview(dados);
-      if (dados.ocrErro) setErro(`Aviso do OCR: ${dados.ocrErro}`);
-    } catch (e) {
-      setErro(e.message);
-    } finally {
-      setCarregandoOcr(false);
+  async function lerImagens(e) {
+    const ficheiros = Array.from(e.target.files || []);
+    if (ficheiros.length === 0) return;
+
+    setErro(''); setSucesso(''); setPreview(null);
+
+    if (ficheiros.length > MAX_IMAGENS) {
+      setErro(`Escolhe no máximo ${MAX_IMAGENS} imagens de cada vez (selecionaste ${ficheiros.length}).`);
       e.target.value = '';
+      return;
     }
+
+    const grandesDemais = ficheiros.filter((f) => f.size > MAX_TAMANHO_MB * 1024 * 1024);
+    if (grandesDemais.length > 0) {
+      setErro(`${grandesDemais.length} imagem(ns) acima de ${MAX_TAMANHO_MB}MB foram ignoradas: ${grandesDemais.map((f) => f.name).join(', ')}`);
+    }
+
+    const validos = ficheiros.filter((f) => f.size <= MAX_TAMANHO_MB * 1024 * 1024);
+    if (validos.length === 0) {
+      e.target.value = '';
+      return;
+    }
+
+    const todosNumeros = [];
+    const todosInvalidos = [];
+    const errosOcr = [];
+    const vistos = new Set();
+
+    for (let i = 0; i < validos.length; i++) {
+      setProgresso({ atual: i + 1, total: validos.length });
+      try {
+        const formData = new FormData();
+        formData.append('imagem', validos[i]);
+        formData.append('paisPadrao', paisPadrao);
+        const dados = await chamarNumerosApi('imagem', { method: 'POST', body: formData, isFormData: true });
+
+        for (const n of dados.numeros || []) {
+          if (!vistos.has(n.numero)) {
+            vistos.add(n.numero);
+            todosNumeros.push(n);
+          }
+        }
+        todosInvalidos.push(...(dados.invalidos || []));
+        if (dados.ocrErro) errosOcr.push(`${validos[i].name}: ${dados.ocrErro}`);
+      } catch (err) {
+        errosOcr.push(`${validos[i].name}: ${err.message}`);
+      }
+    }
+
+    setProgresso(null);
+    setPreview({ numeros: todosNumeros, invalidos: todosInvalidos });
+    if (errosOcr.length > 0) setErro(`Avisos: ${errosOcr.join(' | ')}`);
+    e.target.value = '';
   }
 
   async function confirmarPreview() {
@@ -118,9 +162,29 @@ export default function Numeros() {
     if (!confirm('Apagar esta lista? Não podes desfazer.')) return;
     try {
       await chamarNumerosApi('lista', { method: 'DELETE', query: `&id=${id}` });
+      if (listaAberta === id) { setListaAberta(null); setConteudoListaAberta(null); }
       carregarListas();
     } catch (e) {
       setErro(e.message);
+    }
+  }
+
+  async function alternarVerLista(id) {
+    if (listaAberta === id) {
+      setListaAberta(null);
+      setConteudoListaAberta(null);
+      return;
+    }
+    setListaAberta(id);
+    setConteudoListaAberta(null);
+    setACarregarConteudo(true);
+    try {
+      const lista = await chamarNumerosApi('lista', { query: `&id=${id}` });
+      setConteudoListaAberta(lista);
+    } catch (e) {
+      setErro(e.message);
+    } finally {
+      setACarregarConteudo(false);
     }
   }
 
@@ -128,12 +192,12 @@ export default function Numeros() {
     <LayoutApp>
       <h1 className="text-2xl font-semibold text-base-ink mb-1">Números</h1>
       <p className="text-sm text-base-ink/55 mb-6">
-        Adiciona números manualmente ou lê de uma imagem, para usar como segmentação (incluir/excluir) nas campanhas.
+        Adiciona números manualmente ou lê de imagens, para usar como segmentação (incluir/excluir) nas campanhas.
       </p>
 
       <div className="mb-6 max-w-xs">
         <label className="block text-xs font-medium text-base-ink/60 mb-1.5">
-          País padrão (usado quando o número não tem código de país)
+          País padrão (para números sem código de país)
         </label>
         <select
           value={paisPadrao}
@@ -144,7 +208,7 @@ export default function Numeros() {
         </select>
       </div>
 
-      {erro && <p className="text-sm text-signal-red mb-4">{erro}</p>}
+      {erro && <p className="text-sm text-signal-red mb-4 whitespace-pre-wrap">{erro}</p>}
       {sucesso && <p className="text-sm text-emerald-600 mb-4">{sucesso}</p>}
 
       <div className="bg-base-white border border-black/5 rounded-xs p-6 mb-6 space-y-3">
@@ -172,20 +236,26 @@ export default function Numeros() {
       </div>
 
       <div className="bg-base-white border border-black/5 rounded-xs p-6 mb-6 space-y-3">
-        <h2 className="text-sm font-medium text-base-ink">Ler números de uma imagem</h2>
-        <input type="file" accept="image/*" onChange={lerImagem} disabled={carregandoOcr} className="text-sm" />
-        {carregandoOcr && <p className="text-sm text-base-ink/50">A ler imagem...</p>}
+        <h2 className="text-sm font-medium text-base-ink">Ler números de imagens</h2>
+        <p className="text-xs text-base-ink/40">Até {MAX_IMAGENS} imagens de cada vez, {MAX_TAMANHO_MB}MB no máximo por imagem.</p>
+        <input type="file" accept="image/*" multiple onChange={lerImagens} disabled={!!progresso} className="text-sm" />
+
+        {progresso && (
+          <div className="space-y-1">
+            <p className="text-sm text-base-ink/60">A processar imagem {progresso.atual} de {progresso.total}...</p>
+            <div className="w-full h-1.5 bg-base-fog rounded-full overflow-hidden">
+              <div
+                className="h-full bg-brand-500 transition-all"
+                style={{ width: `${(progresso.atual / progresso.total) * 100}%` }}
+              />
+            </div>
+          </div>
+        )}
 
         {preview && (
           <div className="space-y-3">
-            <p className="text-sm text-base-ink/70">{preview.numeros.length} números reconhecidos:</p>
-            {preview.numeros.length === 0 && preview.textoDetetado && (
-              <details className="text-xs text-base-ink/40">
-                <summary>Ver texto que o OCR conseguiu ler (para depurar)</summary>
-                <pre className="whitespace-pre-wrap mt-2 p-2 bg-base-fog rounded-xs">{preview.textoDetetado}</pre>
-              </details>
-            )}
-            <ul className="text-sm max-h-48 overflow-y-auto border border-black/10 rounded-xs divide-y divide-black/5">
+            <p className="text-sm text-base-ink/70">{preview.numeros.length} números únicos reconhecidos:</p>
+            <ul className="text-sm max-h-64 overflow-y-auto border border-black/10 rounded-xs divide-y divide-black/5">
               {preview.numeros.map((n, i) => (
                 <li key={i} className="flex justify-between items-center px-3.5 py-2">
                   <span className="text-base-ink">{n.formatado} <span className="text-base-ink/40">({n.pais})</span></span>
@@ -208,14 +278,37 @@ export default function Numeros() {
         <h2 className="text-sm font-medium text-base-ink mb-3">Listas guardadas</h2>
         {listas.length === 0 && <p className="text-sm text-base-ink/40">Ainda não tens listas.</p>}
         {listas.map((l) => (
-          <div key={l.id} className="flex justify-between items-center py-2.5 border-b border-black/5 last:border-b-0">
-            <span className="text-sm text-base-ink">
-              {l.nome} — <strong>{l.total}</strong> números <span className="text-base-ink/40">({l.origem})</span>
-            </span>
-            <div className="flex gap-3">
-              <button onClick={() => copiarLista(l.id)} className="text-xs text-brand-600 underline">Copiar</button>
-              <button onClick={() => apagarLista(l.id)} className="text-xs text-signal-red underline">Apagar</button>
+          <div key={l.id} className="border-b border-black/5 last:border-b-0">
+            <div className="flex justify-between items-center py-2.5">
+              <button
+                onClick={() => alternarVerLista(l.id)}
+                className="text-sm text-base-ink text-left hover:text-brand-600 transition-colors"
+              >
+                {l.nome} — <strong>{l.total}</strong> números <span className="text-base-ink/40">({l.origem})</span>
+              </button>
+              <div className="flex gap-3 shrink-0">
+                <button onClick={() => alternarVerLista(l.id)} className="text-xs text-brand-600 underline">
+                  {listaAberta === l.id ? 'Fechar' : 'Ver'}
+                </button>
+                <button onClick={() => copiarLista(l.id)} className="text-xs text-brand-600 underline">Copiar</button>
+                <button onClick={() => apagarLista(l.id)} className="text-xs text-signal-red underline">Apagar</button>
+              </div>
             </div>
+
+            {listaAberta === l.id && (
+              <div className="pb-3 pl-2">
+                {aCarregarConteudo && <p className="text-xs text-base-ink/40">A carregar...</p>}
+                {conteudoListaAberta && (
+                  <ul className="text-sm max-h-56 overflow-y-auto border border-black/10 rounded-xs divide-y divide-black/5">
+                    {conteudoListaAberta.numeros.map((n, i) => (
+                      <li key={i} className="px-3.5 py-2 text-base-ink">
+                        {n.formatado} <span className="text-base-ink/40">({n.pais})</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            )}
           </div>
         ))}
       </div>
