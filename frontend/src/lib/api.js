@@ -1,6 +1,6 @@
 import { supabase } from './supabaseClient.js';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+const API_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:4000' : 'https://blui-backend.onrender.com');
 
 async function obterToken() {
   const {

@@ -70,7 +70,7 @@ export default function Contactos() {
   async function exportarCsv() {
     try {
       const query = filtro ? `?estado=${filtro}` : '';
-      const base = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+      const base = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:4000' : 'https://blui-backend.onrender.com');
 
       const { supabase } = await import('../lib/supabaseClient.js');
       const {
