@@ -2,24 +2,36 @@ import axios from 'axios';
 
 const GRAPH_VERSION = process.env.META_GRAPH_VERSION || 'v21.0';
 
-export async function enviarMensagemWhatsApp({ numero, texto }) {
-  const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID;
-  const token = process.env.WHATSAPP_TOKEN;
+export async function enviarMensagemWhatsApp({
+  numero,
+  texto,
+  accessToken,
+  phoneNumberId,
+}) {
+  const token = accessToken || process.env.WHATSAPP_TOKEN;
+  const phoneId = phoneNumberId || process.env.WHATSAPP_PHONE_NUMBER_ID;
 
-  if (!phoneNumberId || !token) {
-    console.warn('WhatsApp não configurado — mensagem não enviada:', texto);
+  if (!phoneId || !token) {
+    console.warn('WhatsApp não configurado — mensagem não enviada.');
     return null;
   }
 
   const { data } = await axios.post(
-    `https://graph.facebook.com/${GRAPH_VERSION}/${phoneNumberId}/messages`,
+    `https://graph.facebook.com/${GRAPH_VERSION}/${phoneId}/messages`,
     {
       messaging_product: 'whatsapp',
-      to: numero,
+      to: String(numero).replace(/\D/g, ''),
       type: 'text',
-      text: { body: texto },
+      text: {
+        body: String(texto).slice(0, 4096),
+      },
     },
-    { headers: { Authorization: `Bearer ${token}` } }
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+    }
   );
 
   return data;
