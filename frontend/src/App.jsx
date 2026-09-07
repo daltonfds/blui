@@ -1,4 +1,4 @@
-import React from 'react';
+import 'react';
 import { Routes, Route } from 'react-router-dom';
 import Landing from './pages/Landing.jsx';
 import Autenticacao from './pages/Autenticacao.jsx';
@@ -7,6 +7,7 @@ import Contactos from './pages/Contactos.jsx';
 import Produtos from './pages/Produtos.jsx';
 import Campanhas from './pages/Campanhas.jsx';
 import Definicoes from './pages/Definicoes.jsx';
+import Numeros from './pages/Numeros.jsx';
 import RotaProtegida from './components/RotaProtegida.jsx';
 
 export default function App() {
@@ -21,6 +22,7 @@ export default function App() {
       <Route path="/produtos" element={<RotaProtegida><Produtos /></RotaProtegida>} />
       <Route path="/campanhas" element={<RotaProtegida><Campanhas /></RotaProtegida>} />
       <Route path="/definicoes" element={<RotaProtegida><Definicoes /></RotaProtegida>} />
+      <Route path="/numeros" element={<RotaProtegida><Numeros /></RotaProtegida>} />
     </Routes>
   );
 }

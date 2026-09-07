@@ -9,6 +9,7 @@ const links = [
   { to: '/contactos', label: 'Contactos', Icon: IconPeople },
   { to: '/produtos', label: 'Produtos', Icon: IconLayers },
   { to: '/campanhas', label: 'Campanhas', Icon: IconBolt },
+  { to: '/numeros', label: 'Números', Icon: IconLayers },
   { to: '/definicoes', label: 'Definições', Icon: IconSettings },
 ];
 
