@@ -6,6 +6,14 @@ const SUPABASE_URL = 'https://hckflwxnfcfbypmvdksy.supabase.co';
 const ANON_KEY =
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhja2Zsd3huZmNmYnlwbXZka3N5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg2MTM0NjAsImV4cCI6MjEwNDE4OTQ2MH0.UJ2y1iGbirOTmN8uRDke-xwuunhnbv7WGzE1rU-T2Sg';
 
+const PAISES = [
+  { valor: 'MZ', nome: 'Moçambique (+258)' },
+  { valor: 'ZA', nome: 'África do Sul (+27)' },
+  { valor: 'AO', nome: 'Angola (+244)' },
+  { valor: 'BR', nome: 'Brasil (+55)' },
+  { valor: 'PT', nome: 'Portugal (+351)' },
+];
+
 async function chamarNumerosApi(action, { method = 'GET', body, isFormData, query = '' } = {}) {
   const { data: { session } } = await supabase.auth.getSession();
   const resposta = await fetch(
@@ -29,6 +37,7 @@ export default function Numeros() {
   const [listas, setListas] = useState([]);
   const [texto, setTexto] = useState('');
   const [nomeLista, setNomeLista] = useState('');
+  const [paisPadrao, setPaisPadrao] = useState('MZ');
   const [preview, setPreview] = useState(null);
   const [carregandoOcr, setCarregandoOcr] = useState(false);
   const [erro, setErro] = useState('');
@@ -49,7 +58,7 @@ export default function Numeros() {
     try {
       const resultado = await chamarNumerosApi('manual', {
         method: 'POST',
-        body: { texto, nome: nomeLista || undefined },
+        body: { texto, nome: nomeLista || undefined, paisPadrao },
       });
       setTexto(''); setNomeLista('');
       setSucesso(`Lista guardada com ${resultado.lista.total} números.`);
@@ -66,8 +75,10 @@ export default function Numeros() {
     try {
       const formData = new FormData();
       formData.append('imagem', ficheiro);
+      formData.append('paisPadrao', paisPadrao);
       const dados = await chamarNumerosApi('imagem', { method: 'POST', body: formData, isFormData: true });
       setPreview(dados);
+      if (dados.ocrErro) setErro(`Aviso do OCR: ${dados.ocrErro}`);
     } catch (e) {
       setErro(e.message);
     } finally {
@@ -116,9 +127,22 @@ export default function Numeros() {
   return (
     <LayoutApp>
       <h1 className="text-2xl font-semibold text-base-ink mb-1">Números</h1>
-      <p className="text-sm text-base-ink/55 mb-8">
+      <p className="text-sm text-base-ink/55 mb-6">
         Adiciona números manualmente ou lê de uma imagem, para usar como segmentação (incluir/excluir) nas campanhas.
       </p>
+
+      <div className="mb-6 max-w-xs">
+        <label className="block text-xs font-medium text-base-ink/60 mb-1.5">
+          País padrão (usado quando o número não tem código de país)
+        </label>
+        <select
+          value={paisPadrao}
+          onChange={(e) => setPaisPadrao(e.target.value)}
+          className="w-full border border-black/10 rounded-xs px-3.5 py-2.5 text-sm text-base-ink focus:border-brand-500 transition-colors"
+        >
+          {PAISES.map((p) => <option key={p.valor} value={p.valor}>{p.nome}</option>)}
+        </select>
+      </div>
 
       {erro && <p className="text-sm text-signal-red mb-4">{erro}</p>}
       {sucesso && <p className="text-sm text-emerald-600 mb-4">{sucesso}</p>}
@@ -134,7 +158,7 @@ export default function Numeros() {
         <textarea
           className="w-full border border-black/10 rounded-xs px-3.5 py-2.5 text-sm text-base-ink focus:border-brand-500 transition-colors"
           rows={4}
-          placeholder={'+258849191742\n+351912345678'}
+          placeholder={'+258 84 623 6380\n84 623 6380\n082 123 4567'}
           value={texto}
           onChange={(e) => setTexto(e.target.value)}
         />
@@ -155,6 +179,12 @@ export default function Numeros() {
         {preview && (
           <div className="space-y-3">
             <p className="text-sm text-base-ink/70">{preview.numeros.length} números reconhecidos:</p>
+            {preview.numeros.length === 0 && preview.textoDetetado && (
+              <details className="text-xs text-base-ink/40">
+                <summary>Ver texto que o OCR conseguiu ler (para depurar)</summary>
+                <pre className="whitespace-pre-wrap mt-2 p-2 bg-base-fog rounded-xs">{preview.textoDetetado}</pre>
+              </details>
+            )}
             <ul className="text-sm max-h-48 overflow-y-auto border border-black/10 rounded-xs divide-y divide-black/5">
               {preview.numeros.map((n, i) => (
                 <li key={i} className="flex justify-between items-center px-3.5 py-2">
