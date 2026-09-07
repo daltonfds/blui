@@ -24,6 +24,12 @@ const groups = [
     ],
   },
   {
+    label: 'NÚMEROS',
+    links: [
+      ['/numeros', 'Ler números de imagens', IconLayers],
+    ],
+  },
+  {
     label: 'CONTACTOS',
     links: [
       ['/contactos', 'Todos', IconPeople],
