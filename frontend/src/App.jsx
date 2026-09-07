@@ -14,6 +14,8 @@ import Conversas from './pages/Conversas.jsx';
 import Automacoes from './pages/Automacoes.jsx';
 import Suporte from './pages/Suporte.jsx';
 import RotaProtegida from './components/RotaProtegida.jsx';
+import Loja from './pages/Loja'
+import Sites from './pages/Sites'
 
 const ModulePage = ({ title, description, items = [] }) => (
   <div className="min-h-screen bg-base-fog p-6 md:p-8">
@@ -71,8 +73,8 @@ export default function App() {
       <Route path="/numeros" element={<RotaProtegida><Numeros /></RotaProtegida>} />
 
       <Route path="/conversas" element={<RotaProtegida><Conversas /></RotaProtegida>} />
-      <Route path="/loja" element={<RotaProtegida><Generic type="loja" /></RotaProtegida>} />
-      <Route path="/sites" element={<RotaProtegida><Generic type="sites" /></RotaProtegida>} />
+      <Route path="/loja" element={<RotaProtegida><Loja /></RotaProtegida>} />
+      <Route path="/sites" element={<RotaProtegida><Sites /></RotaProtegida>} />
       <Route path="/automacoes" element={<RotaProtegida><Automacoes /></RotaProtegida>} />
       <Route path="/analytics" element={<RotaProtegida><Analytics /></RotaProtegida>} />
       <Route path="/suporte" element={<RotaProtegida><Suporte /></RotaProtegida>} />
