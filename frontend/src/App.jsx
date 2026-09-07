@@ -9,6 +9,10 @@ import Produtos from './pages/Produtos.jsx';
 import Campanhas from './pages/Campanhas.jsx';
 import Definicoes from './pages/Definicoes.jsx';
 import Numeros from './pages/Numeros.jsx';
+import Analytics from './pages/Analytics.jsx';
+import Conversas from './pages/Conversas.jsx';
+import Automacoes from './pages/Automacoes.jsx';
+import Suporte from './pages/Suporte.jsx';
 import RotaProtegida from './components/RotaProtegida.jsx';
 
 const ModulePage = ({ title, description, items = [] }) => (
@@ -66,11 +70,12 @@ export default function App() {
       <Route path="/definicoes" element={<RotaProtegida><Definicoes /></RotaProtegida>} />
       <Route path="/numeros" element={<RotaProtegida><Numeros /></RotaProtegida>} />
 
-      <Route path="/conversas" element={<RotaProtegida><Generic type="conversas" /></RotaProtegida>} />
+      <Route path="/conversas" element={<RotaProtegida><Conversas /></RotaProtegida>} />
       <Route path="/loja" element={<RotaProtegida><Generic type="loja" /></RotaProtegida>} />
       <Route path="/sites" element={<RotaProtegida><Generic type="sites" /></RotaProtegida>} />
-      <Route path="/automacoes" element={<RotaProtegida><Generic type="automacoes" /></RotaProtegida>} />
-      <Route path="/analytics" element={<RotaProtegida><Generic type="analytics" /></RotaProtegida>} />
+      <Route path="/automacoes" element={<RotaProtegida><Automacoes /></RotaProtegida>} />
+      <Route path="/analytics" element={<RotaProtegida><Analytics /></RotaProtegida>} />
+      <Route path="/suporte" element={<RotaProtegida><Suporte /></RotaProtegida>} />
 
       <Route path="*" element={<Navigate to="/painel" replace />} />
     </Routes>

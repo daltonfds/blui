@@ -9,6 +9,11 @@ import trackingRoutes from './routes/tracking.js';
 import webhooksRoutes from './routes/webhooks.js';
 import sugestoesRoutes from './routes/sugestoes.js';
 import { iniciarScheduler } from './lib/scheduler.js';
+import conversasRoutes from './routes/conversas.js';
+import lojaRoutes from './routes/loja.js';
+import analyticsRoutes from './routes/analytics.js';
+import automacoesRoutes from './routes/automacoes.js';
+import suporteRoutes from './routes/suporte.js';
 
 dotenv.config();
 
@@ -25,6 +30,11 @@ app.use('/api/campanhas', campanhasRoutes);
 app.use('/api/tracking', trackingRoutes);
 app.use('/api/sugestoes', sugestoesRoutes);
 app.use('/webhooks', webhooksRoutes);
+app.use('/api/conversas', conversasRoutes);
+app.use('/api/loja', lojaRoutes);
+app.use('/api/analytics', analyticsRoutes);
+app.use('/api/automacoes', automacoesRoutes);
+app.use('/api/suporte', suporteRoutes);
 
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {

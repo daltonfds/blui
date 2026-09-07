@@ -17,6 +17,7 @@ const groups = [
     links: [
       ['/painel', 'Visão geral', IconGrid],
       ['/analytics', 'Analytics', IconGrid],
+      ['/suporte', 'Suporte', IconSettings],
     ],
   },
   {
