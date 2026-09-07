@@ -1,4 +1,3 @@
-import 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 
 import Landing from './pages/Landing.jsx';
@@ -13,73 +12,228 @@ import Analytics from './pages/Analytics.jsx';
 import Conversas from './pages/Conversas.jsx';
 import Automacoes from './pages/Automacoes.jsx';
 import Suporte from './pages/Suporte.jsx';
+import Loja from './pages/Loja.jsx';
+import Sites from './pages/Sites.jsx';
 import RotaProtegida from './components/RotaProtegida.jsx';
-import Loja from './pages/Loja'
-import Sites from './pages/Sites'
 
-const ModulePage = ({ title, description, items = [] }) => (
-  <div className="min-h-screen bg-base-fog p-6 md:p-8">
-    <div className="mx-auto max-w-7xl">
-      <div className="mb-8">
-        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-brand-600">
-          BLUI
-        </p>
-        <h1 className="mt-2 text-3xl font-semibold text-base-ink">{title}</h1>
-        <p className="mt-2 text-sm text-base-ink/60">{description}</p>
-      </div>
-
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {items.map((item) => (
-          <div
-            key={item}
-            className="rounded-xl border border-black/5 bg-base-white p-5 shadow-sm"
-          >
-            <h2 className="font-semibold text-base-ink">{item}</h2>
-            <p className="mt-2 text-sm text-base-ink/50">
-              Este módulo está preparado para receber os dados e ações do BLUI.
-            </p>
-          </div>
-        ))}
-      </div>
-    </div>
-  </div>
+const protegida = (element) => (
+  <RotaProtegida>{element}</RotaProtegida>
 );
-
-const modules = {
-  conversas: ['Conversas', 'WhatsApp, Instagram, Messenger e Site num único espaço.', ['WhatsApp', 'Instagram', 'Messenger', 'Site']],
-  loja: ['Loja', 'Produtos, pedidos, carrinhos e checkout.', ['Loja', 'Pedidos', 'Carrinhos', 'Checkout']],
-  sites: ['Sites', 'Landing pages, páginas de venda, formulários e domínios.', ['Landing pages', 'Páginas de venda', 'Formulários', 'Domínios']],
-  automacoes: ['Automações', 'Fluxos de remarketing e recuperação automática.', ['Remarketing', 'Carrinho abandonado', 'Checkout abandonado', 'Pós-venda', 'Reativação']],
-  analytics: ['Analytics', 'Métricas de visitantes, leads, conversas e vendas.', ['Visitantes', 'Leads', 'Conversas', 'Vendas', 'Receita', 'ROI / ROAS']],
-};
-
-function Generic({ type }) {
-  const [title, description, items] = modules[type];
-  return <ModulePage title={title} description={description} items={items} />;
-}
 
 export default function App() {
   return (
     <Routes>
       <Route path="/" element={<Landing />} />
-      <Route path="/entrar" element={<Autenticacao abaInicial="entrar" />} />
-      <Route path="/registar" element={<Autenticacao abaInicial="registar" />} />
+      <Route
+        path="/entrar"
+        element={<Autenticacao abaInicial="entrar" />}
+      />
+      <Route
+        path="/registar"
+        element={<Autenticacao abaInicial="registar" />}
+      />
 
-      <Route path="/painel" element={<RotaProtegida><Painel /></RotaProtegida>} />
-      <Route path="/contactos" element={<RotaProtegida><Contactos /></RotaProtegida>} />
-      <Route path="/produtos" element={<RotaProtegida><Produtos /></RotaProtegida>} />
-      <Route path="/campanhas" element={<RotaProtegida><Campanhas /></RotaProtegida>} />
-      <Route path="/definicoes" element={<RotaProtegida><Definicoes /></RotaProtegida>} />
-      <Route path="/numeros" element={<RotaProtegida><Numeros /></RotaProtegida>} />
+      {/* PAINEL */}
+      <Route path="/painel" element={protegida(<Painel />)} />
+      <Route path="/painel/funil" element={protegida(<Painel />)} />
+      <Route path="/painel/receita" element={protegida(<Analytics />)} />
+      <Route
+        path="/painel/oportunidades"
+        element={protegida(<Contactos />)}
+      />
 
-      <Route path="/conversas" element={<RotaProtegida><Conversas /></RotaProtegida>} />
-      <Route path="/loja" element={<RotaProtegida><Loja /></RotaProtegida>} />
-      <Route path="/sites" element={<RotaProtegida><Sites /></RotaProtegida>} />
-      <Route path="/automacoes" element={<RotaProtegida><Automacoes /></RotaProtegida>} />
-      <Route path="/analytics" element={<RotaProtegida><Analytics /></RotaProtegida>} />
-      <Route path="/suporte" element={<RotaProtegida><Suporte /></RotaProtegida>} />
+      {/* CONTACTOS */}
+      <Route path="/contactos" element={protegida(<Contactos />)} />
+      <Route
+        path="/contactos/leads"
+        element={protegida(<Contactos />)}
+      />
+      <Route
+        path="/contactos/clientes"
+        element={protegida(<Contactos />)}
+      />
+      <Route
+        path="/contactos/segmentos"
+        element={protegida(<Contactos />)}
+      />
+      <Route
+        path="/contactos/etiquetas"
+        element={protegida(<Contactos />)}
+      />
 
-      <Route path="*" element={<Navigate to="/painel" replace />} />
+      {/* CONVERSAS */}
+      <Route path="/conversas" element={protegida(<Conversas />)} />
+      <Route
+        path="/conversas/whatsapp"
+        element={protegida(<Conversas />)}
+      />
+      <Route
+        path="/conversas/instagram"
+        element={protegida(<Conversas />)}
+      />
+      <Route
+        path="/conversas/messenger"
+        element={protegida(<Conversas />)}
+      />
+      <Route
+        path="/conversas/site"
+        element={protegida(<Conversas />)}
+      />
+
+      {/* PRODUTOS */}
+      <Route path="/produtos" element={protegida(<Produtos />)} />
+      <Route
+        path="/produtos/categorias"
+        element={protegida(<Produtos />)}
+      />
+      <Route
+        path="/produtos/faq"
+        element={protegida(<Produtos />)}
+      />
+      <Route
+        path="/produtos/agente"
+        element={protegida(<Produtos />)}
+      />
+
+      {/* LOJA */}
+      <Route path="/loja" element={protegida(<Loja />)} />
+      <Route
+        path="/loja/produtos"
+        element={protegida(<Loja />)}
+      />
+      <Route
+        path="/loja/pedidos"
+        element={protegida(<Loja />)}
+      />
+      <Route
+        path="/loja/carrinhos"
+        element={protegida(<Loja />)}
+      />
+      <Route
+        path="/loja/checkout"
+        element={protegida(<Loja />)}
+      />
+
+      {/* SITES */}
+      <Route path="/sites" element={protegida(<Sites />)} />
+      <Route
+        path="/sites/vendas"
+        element={protegida(<Sites />)}
+      />
+      <Route
+        path="/sites/formularios"
+        element={protegida(<Sites />)}
+      />
+      <Route
+        path="/sites/dominios"
+        element={protegida(<Sites />)}
+      />
+
+      {/* CAMPANHAS */}
+      <Route
+        path="/campanhas"
+        element={protegida(<Campanhas />)}
+      />
+      <Route
+        path="/campanhas/publicos"
+        element={protegida(<Campanhas />)}
+      />
+      <Route
+        path="/campanhas/remarketing"
+        element={protegida(<Campanhas />)}
+      />
+      <Route
+        path="/campanhas/resultados"
+        element={protegida(<Campanhas />)}
+      />
+
+      {/* AUTOMAÇÕES */}
+      <Route
+        path="/automacoes"
+        element={protegida(<Automacoes />)}
+      />
+      <Route
+        path="/automacoes/remarketing"
+        element={protegida(<Automacoes />)}
+      />
+      <Route
+        path="/automacoes/carrinho-abandonado"
+        element={protegida(<Automacoes />)}
+      />
+      <Route
+        path="/automacoes/checkout-abandonado"
+        element={protegida(<Automacoes />)}
+      />
+      <Route
+        path="/automacoes/pos-venda"
+        element={protegida(<Automacoes />)}
+      />
+      <Route
+        path="/automacoes/reativacao"
+        element={protegida(<Automacoes />)}
+      />
+
+      {/* ANALYTICS */}
+      <Route
+        path="/analytics"
+        element={protegida(<Analytics />)}
+      />
+
+      {/* SUPORTE */}
+      <Route
+        path="/suporte"
+        element={protegida(<Suporte />)}
+      />
+
+      {/* DEFINIÇÕES */}
+      <Route
+        path="/definicoes"
+        element={protegida(<Definicoes />)}
+      />
+      <Route
+        path="/definicoes/negocio"
+        element={protegida(<Definicoes />)}
+      />
+      <Route
+        path="/definicoes/agente"
+        element={protegida(<Definicoes />)}
+      />
+      <Route
+        path="/definicoes/canais"
+        element={protegida(<Definicoes />)}
+      />
+      <Route
+        path="/definicoes/meta"
+        element={protegida(<Definicoes />)}
+      />
+      <Route
+        path="/definicoes/pagamentos"
+        element={protegida(<Definicoes />)}
+      />
+      <Route
+        path="/definicoes/entregas"
+        element={protegida(<Definicoes />)}
+      />
+      <Route
+        path="/definicoes/automacoes"
+        element={protegida(<Definicoes />)}
+      />
+      <Route
+        path="/definicoes/seguranca"
+        element={protegida(<Definicoes />)}
+      />
+
+      {/* NÚMEROS */}
+      <Route
+        path="/numeros"
+        element={protegida(<Numeros />)}
+      />
+
+      {/* QUALQUER ROTA DESCONHECIDA */}
+      <Route
+        path="*"
+        element={<Navigate to="/painel" replace />}
+      />
     </Routes>
   );
 }
