@@ -57,11 +57,32 @@ router.get('/assinaturas-pendentes', async (_req, res) => {
 });
 
 router.post('/assinaturas/:id/aprovar', async (req, res) => {
+  const { data: pedido, error: erroPedido } = await supabase
+    .from('assinaturas')
+    .select('id, plano_id, planos(nome, dias_validade)')
+    .eq('id', req.params.id)
+    .single();
+
+  if (erroPedido || !pedido) {
+    return res.status(404).json({ erro: 'Assinatura não encontrada.' });
+  }
+
+  const dias = Number(pedido.planos?.dias_validade || 30);
+  const inicio = new Date();
+  const fim = new Date(inicio);
+  fim.setDate(fim.getDate() + dias);
+
   const { data, error } = await supabase
     .from('assinaturas')
-    .update({ estado: 'ativa', atualizado_em: new Date().toISOString() })
+    .update({
+      estado: 'ativa',
+      ciclo_inicio: inicio.toISOString(),
+      ciclo_fim: fim.toISOString(),
+      mensagens_usadas: 0,
+      atualizado_em: new Date().toISOString(),
+    })
     .eq('id', req.params.id)
-    .select()
+    .select('*, planos(*)')
     .single();
 
   if (error) return res.status(500).json({ erro: error.message });
