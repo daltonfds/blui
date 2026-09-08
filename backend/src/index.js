@@ -17,6 +17,7 @@ import suporteRoutes from './routes/suporte.js';
 import sitesRoutes from './routes/sites.js';
 import categoriasRoutes from './routes/categorias.js';
 import assinaturasRoutes from './routes/assinaturas.js';
+import { verificarAssinatura } from './middleware/assinatura.js';
 
 dotenv.config();
 
@@ -27,20 +28,23 @@ app.use(express.json());
 
 app.get('/', (req, res) => res.json({ ok: true, servico: 'Blui API' }));
 
-app.use('/api/contactos', contactosRoutes);
-app.use('/api/produtos', produtosRoutes);
-app.use('/api/campanhas', campanhasRoutes);
-app.use('/api/tracking', trackingRoutes);
-app.use('/api/sugestoes', sugestoesRoutes);
-app.use('/webhooks', webhooksRoutes);
-app.use('/api/conversas', conversasRoutes);
-app.use('/api/loja', lojaRoutes);
-app.use('/api/analytics', analyticsRoutes);
-app.use('/api/automacoes', automacoesRoutes);
+// Rotas operacionais — exigem assinatura ativa (ou ser admin)
+app.use('/api/contactos', verificarAssinatura, contactosRoutes);
+app.use('/api/produtos', verificarAssinatura, produtosRoutes);
+app.use('/api/campanhas', verificarAssinatura, campanhasRoutes);
+app.use('/api/tracking', verificarAssinatura, trackingRoutes);
+app.use('/api/sugestoes', verificarAssinatura, sugestoesRoutes);
+app.use('/api/conversas', verificarAssinatura, conversasRoutes);
+app.use('/api/loja', verificarAssinatura, lojaRoutes);
+app.use('/api/analytics', verificarAssinatura, analyticsRoutes);
+app.use('/api/automacoes', verificarAssinatura, automacoesRoutes);
+app.use('/api/sites', verificarAssinatura, sitesRoutes);
+app.use('/api/categorias', verificarAssinatura, categoriasRoutes);
+
+// Rotas sempre acessíveis (mesmo sem assinatura ativa) — precisam de ser para o utilizador conseguir renovar/pedir ajuda
 app.use('/api/suporte', suporteRoutes);
-app.use('/api/sites', sitesRoutes);
-app.use('/api/categorias', categoriasRoutes);
 app.use('/api/assinaturas', assinaturasRoutes);
+app.use('/webhooks', webhooksRoutes);
 
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {
