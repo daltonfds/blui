@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 import { supabase } from '../lib/supabaseClient.js';
-import { api } from '../lib/api.js';
 
 export default function RotaProtegida({ children, ignorarAssinatura = false }) {
   const { sessao, carregando } = useAuth();
@@ -33,7 +32,15 @@ export default function RotaProtegida({ children, ignorarAssinatura = false }) {
           return;
         }
 
-        const assinatura = await api.get('/api/assinaturas/minha');
+        const { data: assinatura, error } = await supabase
+          .from('assinaturas')
+          .select('id, estado, ciclo_inicio, ciclo_fim, mensagens_usadas, planos(id,nome,preco_brl,mensagens_incluidas,dias_validade,ativo)')
+          .eq('user_id', sessao.user.id)
+          .order('criado_em', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (error) throw error;
 
         if (!assinatura) {
           if (!cancelado) {
