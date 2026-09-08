@@ -1,3 +1,4 @@
+const twilioRoutes = require('./routes/twilio');
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
@@ -44,6 +45,7 @@ app.use('/api/categorias', verificarAssinatura, categoriasRoutes);
 // Sempre acessíveis, mesmo sem assinatura ativa
 app.use('/api/suporte', suporteRoutes);
 app.use('/api/assinaturas', assinaturasRoutes);
+app.use('/api/twilio', twilioRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/webhooks', webhooksRoutes);
 
