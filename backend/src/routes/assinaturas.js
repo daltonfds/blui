@@ -21,6 +21,7 @@ router.get('/minha', async (req, res) => {
     .from('assinaturas')
     .select('*,planos(*)')
     .eq('user_id', req.user.id)
+    .in('estado', ['ativa', 'pendente'])
     .order('criado_em', { ascending: false })
     .limit(1)
     .maybeSingle();

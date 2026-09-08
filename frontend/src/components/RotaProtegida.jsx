@@ -3,15 +3,22 @@ import { Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 import { supabase } from '../lib/supabaseClient.js';
 
-export default function RotaProtegida({ children, ignorarAssinatura = false }) {
+export default function RotaProtegida({
+  children,
+  ignorarAssinatura = false,
+}) {
   const { sessao, carregando } = useAuth();
+
   const [verificando, setVerificando] = useState(true);
   const [acessoLiberado, setAcessoLiberado] = useState(false);
   const [motivoBloqueio, setMotivoBloqueio] = useState(null);
 
   useEffect(() => {
-    if (!sessao) {
+    if (carregando) return;
+
+    if (!sessao?.user?.id) {
       setVerificando(false);
+      setAcessoLiberado(false);
       return;
     }
 
@@ -25,97 +32,193 @@ export default function RotaProtegida({ children, ignorarAssinatura = false }) {
 
     async function verificar() {
       setVerificando(true);
+      setMotivoBloqueio(null);
+
       try {
-        const { data: admin } = await supabase.rpc('is_admin');
-        if (admin) {
-          if (!cancelado) { setAcessoLiberado(true); setVerificando(false); }
+        // Administrador nunca fica bloqueado pela assinatura.
+        const { data: admin, error: erroAdmin } =
+          await supabase.rpc('is_admin');
+
+        if (erroAdmin) {
+          console.warn(
+            'Não foi possível verificar admin:',
+            erroAdmin.message
+          );
+        }
+
+        if (admin === true) {
+          if (!cancelado) {
+            setAcessoLiberado(true);
+            setVerificando(false);
+          }
           return;
         }
 
+        // Consulta direta da assinatura do utilizador autenticado.
         const { data: assinatura, error } = await supabase
           .from('assinaturas')
-          .select('id, estado, ciclo_inicio, ciclo_fim, mensagens_usadas, planos(id,nome,preco_brl,mensagens_incluidas,dias_validade,ativo)')
+          .select(`
+            id,
+            estado,
+            ciclo_inicio,
+            ciclo_fim,
+            mensagens_usadas,
+            criado_em,
+            atualizado_em,
+            planos (
+              id,
+              nome,
+              preco_brl,
+              mensagens_incluidas,
+              dias_validade,
+              ativo
+            )
+          `)
           .eq('user_id', sessao.user.id)
+          .in('estado', ['ativa', 'pendente'])
           .order('criado_em', { ascending: false })
           .limit(1)
           .maybeSingle();
 
-        if (error) throw error;
+        if (error) {
+          throw error;
+        }
 
         if (!assinatura) {
           if (!cancelado) {
-            setMotivoBloqueio({ tipo: 'sem_assinatura', mensagem: 'Ainda não tens nenhum plano ativo. Escolhe um plano para continuar.' });
+            setMotivoBloqueio({
+              tipo: 'sem_assinatura',
+              mensagem:
+                'Ainda não tens nenhum plano ativo. Escolhe um plano para continuar.',
+            });
             setAcessoLiberado(false);
           }
           return;
         }
 
-        const venceu = new Date(assinatura.ciclo_fim) < new Date();
-        const bloqueada = assinatura.estado !== 'ativa' || venceu;
+        const agora = new Date();
+        const inicio = assinatura.ciclo_inicio
+          ? new Date(assinatura.ciclo_inicio)
+          : null;
+        const fim = assinatura.ciclo_fim
+          ? new Date(assinatura.ciclo_fim)
+          : null;
 
-        if (bloqueada) {
+        const cicloValido =
+          fim &&
+          !Number.isNaN(fim.getTime()) &&
+          fim.getTime() > agora.getTime();
+
+        const estadoAtivo = assinatura.estado === 'ativa';
+
+        // Se a assinatura está ativa mas não tem ciclo_fim,
+        // consideramos erro de configuração e bloqueamos por segurança.
+        if (!estadoAtivo) {
           if (!cancelado) {
             setMotivoBloqueio({
-              tipo: assinatura.estado === 'pendente' ? 'pendente' : 'assinatura_expirada',
-              mensagem: assinatura.estado === 'pendente'
-                ? `O teu pedido do plano ${assinatura.planos?.nome || ''} está a aguardar aprovação.`
-                : `O teu plano ${assinatura.planos?.nome || ''} expirou. Renova para continuar.`,
+              tipo: 'pendente',
+              mensagem: `O teu pedido do plano ${
+                assinatura.planos?.nome || ''
+              } está a aguardar aprovação.`,
             });
             setAcessoLiberado(false);
           }
-        } else if (!cancelado) {
-          setAcessoLiberado(true);
+          return;
         }
-      } catch (e) {
+
+        if (!cicloValido) {
+          if (!cancelado) {
+            setMotivoBloqueio({
+              tipo: 'assinatura_expirada',
+              mensagem: `O teu plano ${
+                assinatura.planos?.nome || ''
+              } expirou. Renova para continuar.`,
+            });
+            setAcessoLiberado(false);
+          }
+          return;
+        }
+
+        // Assinatura ativa + ciclo válido = acesso.
         if (!cancelado) {
-          setMotivoBloqueio({ tipo: 'erro', mensagem: 'Não foi possível verificar a tua assinatura.' });
+          setAcessoLiberado(true);
+          setMotivoBloqueio(null);
+        }
+      } catch (erro) {
+        console.error('Erro ao verificar assinatura:', erro);
+
+        if (!cancelado) {
+          setMotivoBloqueio({
+            tipo: 'erro',
+            mensagem:
+              'Não foi possível verificar a tua assinatura. Tenta atualizar a página.',
+          });
           setAcessoLiberado(false);
         }
       } finally {
-        if (!cancelado) setVerificando(false);
+        if (!cancelado) {
+          setVerificando(false);
+        }
       }
     }
 
     verificar();
-    return () => { cancelado = true; };
-  }, [sessao, ignorarAssinatura]);
+
+    return () => {
+      cancelado = true;
+    };
+  }, [sessao, carregando, ignorarAssinatura]);
 
   if (carregando || verificando) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-base-fog">
-        <div className="w-8 h-8 border-2 border-brand-500 border-t-transparent rounded-full animate-spin" />
+        <div className="text-sm text-base-ink/60">
+          A verificar a tua conta...
+        </div>
       </div>
     );
   }
 
-  if (!sessao) return <Navigate to="/entrar" replace />;
+  if (!sessao) {
+    return <Navigate to="/entrar" replace />;
+  }
 
-  if (!acessoLiberado) {
-    return <AssinaturaBloqueada motivo={motivoBloqueio} />;
+  if (!acessoLiberado && !ignorarAssinatura) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-base-fog p-6">
+        <div className="w-full max-w-md rounded-lg border border-black/5 bg-base-white p-7 shadow-sm">
+          <h1 className="text-xl font-semibold text-base-ink">
+            Acesso bloqueado
+          </h1>
+
+          <p className="mt-3 text-sm leading-6 text-base-ink/65">
+            {motivoBloqueio?.mensagem ||
+              'A tua assinatura não permite acesso a esta área.'}
+          </p>
+
+          <div className="mt-6 flex gap-3">
+            <button
+              type="button"
+              onClick={() => window.location.reload()}
+              className="rounded-md px-4 py-2.5 text-sm font-medium bg-base-fog text-base-ink hover:opacity-80"
+            >
+              Atualizar
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                window.location.href = '/assinatura';
+              }}
+              className="rounded-md px-4 py-2.5 text-sm font-medium bg-brand-600 text-white hover:opacity-90"
+            >
+              Ver assinatura
+            </button>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return children;
-}
-
-function AssinaturaBloqueada({ motivo }) {
-  const titulo = motivo?.tipo === 'sem_assinatura'
-    ? 'Escolhe um plano para continuar'
-    : motivo?.tipo === 'pendente'
-    ? 'Pedido em análise'
-    : 'A tua assinatura expirou';
-
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-base-fog px-6">
-      <div className="bg-base-white border border-black/5 rounded-xs p-8 max-w-md text-center">
-        <h1 className="text-xl font-semibold text-base-ink mb-2">{titulo}</h1>
-        <p className="text-sm text-base-ink/60 mb-6">{motivo?.mensagem}</p>
-        <a
-          href="/assinatura"
-          className="inline-block bg-brand-500 text-base-white text-sm font-medium px-5 py-2.5 rounded-xs hover:bg-brand-600 transition-colors"
-        >
-          Ver planos
-        </a>
-      </div>
-    </div>
-  );
 }
