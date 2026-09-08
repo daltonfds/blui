@@ -1,7 +1,7 @@
-const twilioRoutes = require('./routes/twilio');
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import twilioRoutes from './routes/twilio.js';
 
 import contactosRoutes from './routes/contactos.js';
 import produtosRoutes from './routes/produtos.js';
@@ -28,7 +28,9 @@ const app = express();
 app.use(cors({ origin: process.env.FRONTEND_URL || '*' }));
 app.use(express.json());
 
-app.get('/', (req, res) => res.json({ ok: true, servico: 'Blui API' }));
+app.get('/', (req, res) => {
+  res.json({ ok: true, servico: 'Blui API' });
+});
 
 app.use('/api/contactos', verificarAssinatura, contactosRoutes);
 app.use('/api/produtos', verificarAssinatura, produtosRoutes);
@@ -42,7 +44,6 @@ app.use('/api/automacoes', verificarAssinatura, automacoesRoutes);
 app.use('/api/sites', verificarAssinatura, sitesRoutes);
 app.use('/api/categorias', verificarAssinatura, categoriasRoutes);
 
-// Sempre acessíveis, mesmo sem assinatura ativa
 app.use('/api/suporte', suporteRoutes);
 app.use('/api/assinaturas', assinaturasRoutes);
 app.use('/api/twilio', twilioRoutes);
@@ -50,7 +51,8 @@ app.use('/api/admin', adminRoutes);
 app.use('/webhooks', webhooksRoutes);
 
 const PORT = process.env.PORT || 4000;
-app.listen(PORT, () => {
+
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Blui API a correr na porta ${PORT}`);
   iniciarScheduler();
 });

@@ -1,15 +1,12 @@
-const express = require('express');
-const twilio = require('twilio');
-const {
+import express from 'express';
+import twilio from 'twilio';
+import {
   sendSMS,
   sendWhatsApp,
-} = require('../lib/twilio');
+} from '../lib/twilio.js';
 
 const router = express.Router();
 
-/*
- * Health/configuração — nunca devolve segredos.
- */
 router.get('/status', (req, res) => {
   const configured = Boolean(
     process.env.TWILIO_ACCOUNT_SID &&
@@ -24,9 +21,6 @@ router.get('/status', (req, res) => {
   });
 });
 
-/*
- * Enviar SMS.
- */
 router.post('/sms/send', async (req, res) => {
   try {
     const { to, body } = req.body || {};
@@ -49,9 +43,6 @@ router.post('/sms/send', async (req, res) => {
   }
 });
 
-/*
- * Enviar WhatsApp.
- */
 router.post('/whatsapp/send', async (req, res) => {
   try {
     const { to, body, mediaUrl } = req.body || {};
@@ -78,16 +69,6 @@ router.post('/whatsapp/send', async (req, res) => {
   }
 });
 
-/*
- * Webhook genérico de mensagens recebidas.
- *
- * O Twilio envia:
- * From
- * To
- * Body
- * MessageSid
- * AccountSid
- */
 router.post(
   '/webhook',
   express.urlencoded({ extended: false }),
@@ -110,15 +91,9 @@ router.post(
 
     const response = new twilio.twiml.MessagingResponse();
 
-    /*
-     * Por enquanto não responde automaticamente.
-     * A próxima camada poderá encaminhar a mensagem
-     * para o agente BLUI.
-     */
-
     res.type('text/xml');
     res.send(response.toString());
   }
 );
 
-module.exports = router;
+export default router;

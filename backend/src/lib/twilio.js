@@ -1,4 +1,4 @@
-const twilio = require('twilio');
+import twilio from 'twilio';
 
 const required = [
   'TWILIO_ACCOUNT_SID',
@@ -21,7 +21,6 @@ function getConfig() {
     accountSid: process.env.TWILIO_ACCOUNT_SID,
     apiKeySid: process.env.TWILIO_API_KEY_SID,
     apiKeySecret: process.env.TWILIO_API_KEY_SECRET,
-
     smsFrom: process.env.TWILIO_SMS_FROM || '',
     whatsappFrom: process.env.TWILIO_WHATSAPP_FROM || '',
   };
@@ -58,9 +57,7 @@ async function sendSMS({ to, body }) {
     throw new Error('to e body são obrigatórios.');
   }
 
-  const client = getClient();
-
-  return client.messages.create({
+  return getClient().messages.create({
     from: config.smsFrom,
     to,
     body,
@@ -78,8 +75,6 @@ async function sendWhatsApp({ to, body, mediaUrl }) {
     throw new Error('to e body são obrigatórios.');
   }
 
-  const client = getClient();
-
   const message = {
     from: normalizeWhatsApp(config.whatsappFrom),
     to: normalizeWhatsApp(to),
@@ -90,10 +85,10 @@ async function sendWhatsApp({ to, body, mediaUrl }) {
     message.mediaUrl = [mediaUrl];
   }
 
-  return client.messages.create(message);
+  return getClient().messages.create(message);
 }
 
-module.exports = {
+export {
   getConfig,
   getClient,
   sendSMS,
