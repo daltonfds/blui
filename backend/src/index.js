@@ -17,6 +17,7 @@ import suporteRoutes from './routes/suporte.js';
 import sitesRoutes from './routes/sites.js';
 import categoriasRoutes from './routes/categorias.js';
 import assinaturasRoutes from './routes/assinaturas.js';
+import adminRoutes from './routes/admin.js';
 import { verificarAssinatura } from './middleware/assinatura.js';
 
 dotenv.config();
@@ -28,7 +29,6 @@ app.use(express.json());
 
 app.get('/', (req, res) => res.json({ ok: true, servico: 'Blui API' }));
 
-// Rotas operacionais — exigem assinatura ativa (ou ser admin)
 app.use('/api/contactos', verificarAssinatura, contactosRoutes);
 app.use('/api/produtos', verificarAssinatura, produtosRoutes);
 app.use('/api/campanhas', verificarAssinatura, campanhasRoutes);
@@ -41,9 +41,10 @@ app.use('/api/automacoes', verificarAssinatura, automacoesRoutes);
 app.use('/api/sites', verificarAssinatura, sitesRoutes);
 app.use('/api/categorias', verificarAssinatura, categoriasRoutes);
 
-// Rotas sempre acessíveis (mesmo sem assinatura ativa) — precisam de ser para o utilizador conseguir renovar/pedir ajuda
+// Sempre acessíveis, mesmo sem assinatura ativa
 app.use('/api/suporte', suporteRoutes);
 app.use('/api/assinaturas', assinaturasRoutes);
+app.use('/api/admin', adminRoutes);
 app.use('/webhooks', webhooksRoutes);
 
 const PORT = process.env.PORT || 4000;

@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext.jsx';
 import { supabase } from '../lib/supabaseClient.js';
 import { api } from '../lib/api.js';
 
-export default function RotaProtegida({ children }) {
+export default function RotaProtegida({ children, ignorarAssinatura = false }) {
   const { sessao, carregando } = useAuth();
   const [verificando, setVerificando] = useState(true);
   const [acessoLiberado, setAcessoLiberado] = useState(false);
@@ -12,6 +12,12 @@ export default function RotaProtegida({ children }) {
 
   useEffect(() => {
     if (!sessao) {
+      setVerificando(false);
+      return;
+    }
+
+    if (ignorarAssinatura) {
+      setAcessoLiberado(true);
       setVerificando(false);
       return;
     }
@@ -43,8 +49,10 @@ export default function RotaProtegida({ children }) {
         if (bloqueada) {
           if (!cancelado) {
             setMotivoBloqueio({
-              tipo: 'assinatura_expirada',
-              mensagem: `O teu plano ${assinatura.planos?.nome || ''} expirou. Renova para continuar.`,
+              tipo: assinatura.estado === 'pendente' ? 'pendente' : 'assinatura_expirada',
+              mensagem: assinatura.estado === 'pendente'
+                ? `O teu pedido do plano ${assinatura.planos?.nome || ''} está a aguardar aprovação.`
+                : `O teu plano ${assinatura.planos?.nome || ''} expirou. Renova para continuar.`,
             });
             setAcessoLiberado(false);
           }
@@ -63,7 +71,7 @@ export default function RotaProtegida({ children }) {
 
     verificar();
     return () => { cancelado = true; };
-  }, [sessao]);
+  }, [sessao, ignorarAssinatura]);
 
   if (carregando || verificando) {
     return (
@@ -83,15 +91,19 @@ export default function RotaProtegida({ children }) {
 }
 
 function AssinaturaBloqueada({ motivo }) {
+  const titulo = motivo?.tipo === 'sem_assinatura'
+    ? 'Escolhe um plano para continuar'
+    : motivo?.tipo === 'pendente'
+    ? 'Pedido em análise'
+    : 'A tua assinatura expirou';
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-base-fog px-6">
       <div className="bg-base-white border border-black/5 rounded-xs p-8 max-w-md text-center">
-        <h1 className="text-xl font-semibold text-base-ink mb-2">
-          {motivo?.tipo === 'sem_assinatura' ? 'Escolhe um plano para continuar' : 'A tua assinatura expirou'}
-        </h1>
+        <h1 className="text-xl font-semibold text-base-ink mb-2">{titulo}</h1>
         <p className="text-sm text-base-ink/60 mb-6">{motivo?.mensagem}</p>
         <a
-          href="/definicoes"
+          href="/assinatura"
           className="inline-block bg-brand-500 text-base-white text-sm font-medium px-5 py-2.5 rounded-xs hover:bg-brand-600 transition-colors"
         >
           Ver planos
