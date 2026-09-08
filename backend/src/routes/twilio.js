@@ -307,10 +307,10 @@ router.post(
         const { error: mensagemSaidaError } = await supabase
           .from('mensagens')
           .insert({
-            user_id: connection.user_id,
             contacto_id: contacto.id,
-            texto: resposta,
+            conteudo: resposta,
             remetente: 'agente',
+            canal: 'whatsapp',
           });
 
         if (mensagemSaidaError) {
