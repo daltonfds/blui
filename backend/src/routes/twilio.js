@@ -1,11 +1,35 @@
 import express from 'express';
 import twilio from 'twilio';
+
 import {
   sendSMS,
   sendWhatsApp,
+  normalizeWhatsApp,
 } from '../lib/twilio.js';
 
+import { supabase } from '../config/supabase.js';
+import { requireAuth } from '../middleware/auth.js';
+import { responderMensagem } from '../lib/agente.js';
+
 const router = express.Router();
+
+function limparNumero(value) {
+  return String(value || '')
+    .trim()
+    .replace(/^whatsapp:/i, '');
+}
+
+function normalizarTelefone(value) {
+  const numero = limparNumero(value);
+
+  if (!/^\+\d{8,15}$/.test(numero)) {
+    throw new Error(
+      'Número WhatsApp inválido. Usa o formato internacional, por exemplo +258XXXXXXXXX.'
+    );
+  }
+
+  return numero;
+}
 
 router.get('/status', (req, res) => {
   const configured = Boolean(
@@ -21,7 +45,99 @@ router.get('/status', (req, res) => {
   });
 });
 
-router.post('/sms/send', async (req, res) => {
+router.get('/whatsapp/connection', requireAuth, async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('whatsapp_connections')
+      .select('*')
+      .eq('user_id', req.user.id)
+      .maybeSingle();
+
+    if (error) throw error;
+
+    res.json({
+      connected: Boolean(data),
+      connection: data || null,
+    });
+  } catch (error) {
+    console.error('[WhatsApp connection GET]', error);
+
+    res.status(500).json({
+      erro: 'Não foi possível carregar a ligação WhatsApp.',
+    });
+  }
+});
+
+router.post('/whatsapp/connection', requireAuth, async (req, res) => {
+  try {
+    const phoneNumber = normalizarTelefone(req.body?.phoneNumber);
+
+    const configuredSender = process.env.TWILIO_WHATSAPP_FROM
+      ? limparNumero(process.env.TWILIO_WHATSAPP_FROM)
+      : '';
+
+    const twilioFrom = configuredSender || phoneNumber;
+
+    if (!twilioFrom) {
+      throw new Error('TWILIO_WHATSAPP_FROM não configurado.');
+    }
+
+    const payload = {
+      user_id: req.user.id,
+      phone_number: phoneNumber,
+      twilio_from: twilioFrom,
+      channel: 'twilio_whatsapp',
+      status: 'connected',
+      updated_at: new Date().toISOString(),
+    };
+
+    const { data, error } = await supabase
+      .from('whatsapp_connections')
+      .upsert(payload, {
+        onConflict: 'user_id',
+      })
+      .select('*')
+      .single();
+
+    if (error) throw error;
+
+    res.json({
+      success: true,
+      connected: true,
+      connection: data,
+    });
+  } catch (error) {
+    console.error('[WhatsApp connection POST]', error);
+
+    res.status(400).json({
+      erro: error.message || 'Não foi possível ligar o WhatsApp.',
+    });
+  }
+});
+
+router.delete('/whatsapp/connection', requireAuth, async (req, res) => {
+  try {
+    const { error } = await supabase
+      .from('whatsapp_connections')
+      .delete()
+      .eq('user_id', req.user.id);
+
+    if (error) throw error;
+
+    res.json({
+      success: true,
+      connected: false,
+    });
+  } catch (error) {
+    console.error('[WhatsApp connection DELETE]', error);
+
+    res.status(500).json({
+      erro: 'Não foi possível desligar o WhatsApp.',
+    });
+  }
+});
+
+router.post('/sms/send', requireAuth, async (req, res) => {
   try {
     const { to, body } = req.body || {};
 
@@ -43,14 +159,29 @@ router.post('/sms/send', async (req, res) => {
   }
 });
 
-router.post('/whatsapp/send', async (req, res) => {
+router.post('/whatsapp/send', requireAuth, async (req, res) => {
   try {
     const { to, body, mediaUrl } = req.body || {};
+
+    const { data: connection, error } = await supabase
+      .from('whatsapp_connections')
+      .select('twilio_from')
+      .eq('user_id', req.user.id)
+      .maybeSingle();
+
+    if (error) throw error;
+
+    const from = connection?.twilio_from || process.env.TWILIO_WHATSAPP_FROM;
+
+    if (!from) {
+      throw new Error('Este utilizador não tem WhatsApp ligado.');
+    }
 
     const message = await sendWhatsApp({
       to,
       body,
       mediaUrl,
+      from,
     });
 
     res.json({
@@ -72,7 +203,7 @@ router.post('/whatsapp/send', async (req, res) => {
 router.post(
   '/webhook',
   express.urlencoded({ extended: false }),
-  (req, res) => {
+  async (req, res) => {
     const {
       From,
       To,
@@ -84,10 +215,110 @@ router.post(
     console.log('[Twilio inbound]', {
       From,
       To,
-      Body,
       MessageSid,
       AccountSid,
     });
+
+    try {
+      const origem = limparNumero(From);
+      const destino = limparNumero(To);
+      const texto = String(Body || '').trim();
+
+      if (!origem || !destino || !texto) {
+        const response = new twilio.twiml.MessagingResponse();
+
+        res.type('text/xml');
+        return res.send(response.toString());
+      }
+
+      const { data: connection, error: connectionError } = await supabase
+        .from('whatsapp_connections')
+        .select('*')
+        .eq('twilio_from', destino)
+        .eq('status', 'connected')
+        .maybeSingle();
+
+      if (connectionError) throw connectionError;
+
+      if (!connection) {
+        console.warn(
+          '[Twilio inbound] Nenhum utilizador encontrado para:',
+          destino
+        );
+
+        const response = new twilio.twiml.MessagingResponse();
+
+        res.type('text/xml');
+        return res.send(response.toString());
+      }
+
+      let { data: contacto, error: contactoError } = await supabase
+        .from('contactos')
+        .select('*')
+        .eq('user_id', connection.user_id)
+        .eq('numero', origem)
+        .maybeSingle();
+
+      if (contactoError) throw contactoError;
+
+      if (!contacto) {
+        const { data: novoContacto, error } = await supabase
+          .from('contactos')
+          .insert({
+            user_id: connection.user_id,
+            nome: origem,
+            numero: origem,
+            estado: 'lead',
+          })
+          .select('*')
+          .single();
+
+        if (error) throw error;
+
+        contacto = novoContacto;
+      }
+
+      const { error: mensagemEntradaError } = await supabase
+        .from('mensagens')
+        .insert({
+          user_id: connection.user_id,
+          contacto_id: contacto.id,
+          texto,
+          remetente: 'cliente',
+        });
+
+      if (mensagemEntradaError) {
+        throw mensagemEntradaError;
+      }
+
+      const resposta = await responderMensagem({
+        contacto,
+        texto,
+      });
+
+      if (resposta) {
+        const { error: mensagemSaidaError } = await supabase
+          .from('mensagens')
+          .insert({
+            user_id: connection.user_id,
+            contacto_id: contacto.id,
+            texto: resposta,
+            remetente: 'agente',
+          });
+
+        if (mensagemSaidaError) {
+          throw mensagemSaidaError;
+        }
+
+        await sendWhatsApp({
+          to: origem,
+          body: resposta,
+          from: connection.twilio_from,
+        });
+      }
+    } catch (error) {
+      console.error('[Twilio webhook processing]', error);
+    }
 
     const response = new twilio.twiml.MessagingResponse();
 

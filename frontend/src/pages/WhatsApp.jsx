@@ -4,9 +4,10 @@ import { api } from '../lib/api.js';
 
 export default function WhatsApp() {
   const [numero, setNumero] = useState('');
-  const [estado, setEstado] = useState(null);
+  const [connection, setConnection] = useState(null);
   const [carregando, setCarregando] = useState(true);
   const [guardando, setGuardando] = useState(false);
+  const [desligando, setDesligando] = useState(false);
   const [erro, setErro] = useState('');
   const [sucesso, setSucesso] = useState('');
 
@@ -15,20 +16,18 @@ export default function WhatsApp() {
     setErro('');
 
     try {
-      const dados = await api.get('/api/campanhas/contas');
-      const conta = Array.isArray(dados) ? dados[0] : dados?.conta;
+      const dados = await api.get('/api/twilio/whatsapp/connection');
 
-      if (conta?.whatsapp_phone_number_id) {
-        setNumero(conta.whatsapp_phone_number_id);
+      setConnection(dados.connection || null);
+
+      if (dados.connection?.phone_number) {
+        setNumero(dados.connection.phone_number);
       }
-
-      setEstado({
-        conectado: !!conta?.whatsapp_phone_number_id,
-        conta,
-      });
     } catch (e) {
-      setErro(e.message || 'Não foi possível carregar a configuração do WhatsApp.');
-      setEstado({ conectado: false });
+      setErro(
+        e.message ||
+        'Não foi possível carregar a configuração do WhatsApp.'
+      );
     } finally {
       setCarregando(false);
     }
@@ -46,18 +45,50 @@ export default function WhatsApp() {
     setSucesso('');
 
     try {
-      await api.post('/api/campanhas/contas', {
-        whatsapp_phone_number_id: numero.trim(),
-      });
+      const dados = await api.post(
+        '/api/twilio/whatsapp/connection',
+        {
+          phoneNumber: numero.trim(),
+        }
+      );
 
-      setSucesso('Número WhatsApp guardado com sucesso.');
-      await carregar();
+      setConnection(dados.connection || null);
+      setSucesso(
+        'WhatsApp ligado ao teu utilizador com sucesso.'
+      );
     } catch (e) {
-      setErro(e.message || 'Não foi possível guardar o número WhatsApp.');
+      setErro(
+        e.message ||
+        'Não foi possível ligar o WhatsApp.'
+      );
     } finally {
       setGuardando(false);
     }
   }
+
+  async function desligar() {
+    setDesligando(true);
+    setErro('');
+    setSucesso('');
+
+    try {
+      await api.del('/api/twilio/whatsapp/connection');
+
+      setConnection(null);
+      setNumero('');
+
+      setSucesso('WhatsApp desligado.');
+    } catch (e) {
+      setErro(
+        e.message ||
+        'Não foi possível desligar o WhatsApp.'
+      );
+    } finally {
+      setDesligando(false);
+    }
+  }
+
+  const ligado = Boolean(connection);
 
   return (
     <LayoutApp>
@@ -80,7 +111,7 @@ export default function WhatsApp() {
               <p className="mt-1 text-sm text-base-ink/50">
                 {carregando
                   ? 'A verificar…'
-                  : estado?.conectado
+                  : ligado
                     ? 'WhatsApp configurado'
                     : 'WhatsApp não configurado'}
               </p>
@@ -88,12 +119,12 @@ export default function WhatsApp() {
 
             <span
               className={`rounded-xs px-3 py-1.5 text-xs font-medium ${
-                estado?.conectado
+                ligado
                   ? 'bg-green-50 text-green-700'
                   : 'bg-base-fog text-base-ink/50'
               }`}
             >
-              {estado?.conectado ? 'Ligado' : 'Desligado'}
+              {ligado ? 'Ligado' : 'Desligado'}
             </span>
           </div>
 
@@ -117,13 +148,32 @@ export default function WhatsApp() {
               </span>
             </label>
 
-            <button
-              type="submit"
-              disabled={guardando || carregando}
-              className="rounded-xs bg-brand-500 px-5 py-2.5 text-sm font-medium text-white hover:bg-brand-600 disabled:opacity-50"
-            >
-              {guardando ? 'A guardar…' : 'Guardar WhatsApp'}
-            </button>
+            <div className="flex flex-wrap gap-3">
+              <button
+                type="submit"
+                disabled={guardando || carregando}
+                className="rounded-xs bg-brand-500 px-5 py-2.5 text-sm font-medium text-white hover:bg-brand-600 disabled:opacity-50"
+              >
+                {guardando
+                  ? 'A ligar…'
+                  : ligado
+                    ? 'Atualizar WhatsApp'
+                    : 'Ligar WhatsApp'}
+              </button>
+
+              {ligado && (
+                <button
+                  type="button"
+                  onClick={desligar}
+                  disabled={desligando}
+                  className="rounded-xs border border-red-200 px-5 py-2.5 text-sm font-medium text-red-600 hover:bg-red-50 disabled:opacity-50"
+                >
+                  {desligando
+                    ? 'A desligar…'
+                    : 'Desligar'}
+                </button>
+              )}
+            </div>
 
             {erro && (
               <div className="rounded-xs border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
@@ -142,17 +192,17 @@ export default function WhatsApp() {
         <div className="mt-5 grid gap-4 sm:grid-cols-3">
           <Info
             titulo="Mensagens"
-            texto="Recebe e responde mensagens dos clientes."
+            texto="Recebe mensagens dos clientes e guarda o histórico."
           />
 
           <Info
             titulo="Agente"
-            texto="O agente pode responder automaticamente."
+            texto="O agente responde automaticamente usando o contexto do utilizador."
           />
 
           <Info
-            titulo="Remarketing"
-            texto="Usa os contactos para automações."
+            titulo="Multiutilizador"
+            texto="Cada conta BLUI possui a sua própria ligação e os seus próprios contactos."
           />
         </div>
       </div>

@@ -64,11 +64,13 @@ async function sendSMS({ to, body }) {
   });
 }
 
-async function sendWhatsApp({ to, body, mediaUrl }) {
+async function sendWhatsApp({ to, body, mediaUrl, from }) {
   const config = getConfig();
 
-  if (!config.whatsappFrom) {
-    throw new Error('TWILIO_WHATSAPP_FROM não configurado.');
+  const sender = from || config.whatsappFrom;
+
+  if (!sender) {
+    throw new Error('Remetente WhatsApp não configurado.');
   }
 
   if (!to || !body) {
@@ -76,7 +78,7 @@ async function sendWhatsApp({ to, body, mediaUrl }) {
   }
 
   const message = {
-    from: normalizeWhatsApp(config.whatsappFrom),
+    from: normalizeWhatsApp(sender),
     to: normalizeWhatsApp(to),
     body,
   };
@@ -93,4 +95,5 @@ export {
   getClient,
   sendSMS,
   sendWhatsApp,
+  normalizeWhatsApp,
 };
