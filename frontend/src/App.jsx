@@ -10,6 +10,7 @@ import Definicoes from './pages/Definicoes.jsx';
 import Numeros from './pages/Numeros.jsx';
 import Assinatura from './pages/Assinatura.jsx';
 import Suporte from './pages/Suporte.jsx';
+import WhatsApp from './pages/WhatsApp.jsx';
 import Admin from './pages/Admin.jsx';
 import RotaProtegida from './components/RotaProtegida.jsx';
 
@@ -26,6 +27,7 @@ export default function App() {
       <Route path="/campanhas" element={<RotaProtegida><Campanhas /></RotaProtegida>} />
       <Route path="/numeros" element={<RotaProtegida><Numeros /></RotaProtegida>} />
       <Route path="/definicoes" element={<RotaProtegida><Definicoes /></RotaProtegida>} />
+      <Route path="/definicoes/whatsapp" element={<RotaProtegida><WhatsApp /></RotaProtegida>} />
 
       <Route path="/assinatura" element={<RotaProtegida ignorarAssinatura><Assinatura /></RotaProtegida>} />
       <Route path="/suporte" element={<RotaProtegida ignorarAssinatura><Suporte /></RotaProtegida>} />

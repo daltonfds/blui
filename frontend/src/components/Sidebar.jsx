@@ -112,6 +112,7 @@ const grupos = [
       { to: '/definicoes/negocio', label: 'Negócio', Icon: IconSettings },
       { to: '/definicoes/agente', label: 'Agente', Icon: IconSettings },
       { to: '/definicoes/canais', label: 'Canais', Icon: IconSettings },
+      { to: '/definicoes/whatsapp', label: 'WhatsApp', Icon: IconSettings },
       { to: '/definicoes/meta', label: 'Meta', Icon: IconSettings },
       { to: '/definicoes/pagamentos', label: 'Pagamentos', Icon: IconSettings },
       { to: '/definicoes/entregas', label: 'Entregas', Icon: IconSettings },
