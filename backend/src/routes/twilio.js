@@ -269,6 +269,7 @@ router.post(
             nome: origem,
             numero: origem,
             estado: 'lead',
+            canal_origem: 'whatsapp',
           })
           .select('*')
           .single();
@@ -281,15 +282,21 @@ router.post(
       const { error: mensagemEntradaError } = await supabase
         .from('mensagens')
         .insert({
-          user_id: connection.user_id,
           contacto_id: contacto.id,
-          texto,
+          conteudo: texto,
           remetente: 'cliente',
+          canal: 'whatsapp',
         });
 
       if (mensagemEntradaError) {
         throw mensagemEntradaError;
       }
+
+      await supabase
+        .from('contactos')
+        .update({ ultima_interacao: new Date().toISOString() })
+        .eq('id', contacto.id)
+        .eq('user_id', connection.user_id);
 
       const resposta = await responderMensagem({
         contacto,
