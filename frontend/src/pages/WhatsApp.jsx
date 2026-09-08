@@ -3,17 +3,34 @@ import LayoutApp from '../components/LayoutApp.jsx';
 import { api } from '../lib/api.js';
 
 export default function WhatsApp() {
-  const [estado, setEstado] = useState(null);
   const [numero, setNumero] = useState('');
-  const [aGuardar, setAGuardar] = useState(false);
-  const [mensagem, setMensagem] = useState('');
+  const [estado, setEstado] = useState(null);
+  const [carregando, setCarregando] = useState(true);
+  const [guardando, setGuardando] = useState(false);
+  const [erro, setErro] = useState('');
+  const [sucesso, setSucesso] = useState('');
 
   async function carregar() {
+    setCarregando(true);
+    setErro('');
+
     try {
-      const dados = await api.get('/api/twilio/status');
-      setEstado(dados);
-    } catch (err) {
-      setEstado({ erro: err.message });
+      const dados = await api.get('/api/campanhas/contas');
+      const conta = Array.isArray(dados) ? dados[0] : dados?.conta;
+
+      if (conta?.whatsapp_phone_number_id) {
+        setNumero(conta.whatsapp_phone_number_id);
+      }
+
+      setEstado({
+        conectado: !!conta?.whatsapp_phone_number_id,
+        conta,
+      });
+    } catch (e) {
+      setErro(e.message || 'Não foi possível carregar a configuração do WhatsApp.');
+      setEstado({ conectado: false });
+    } finally {
+      setCarregando(false);
     }
   }
 
@@ -23,20 +40,22 @@ export default function WhatsApp() {
 
   async function guardar(e) {
     e.preventDefault();
-    setAGuardar(true);
-    setMensagem('');
+
+    setGuardando(true);
+    setErro('');
+    setSucesso('');
 
     try {
-      await api.post('/api/twilio/configurar', {
-        whatsapp_from: numero.trim(),
+      await api.post('/api/campanhas/contas', {
+        whatsapp_phone_number_id: numero.trim(),
       });
 
-      setMensagem('WhatsApp configurado com sucesso.');
+      setSucesso('Número WhatsApp guardado com sucesso.');
       await carregar();
-    } catch (err) {
-      setMensagem(err.message || 'Não foi possível configurar o WhatsApp.');
+    } catch (e) {
+      setErro(e.message || 'Não foi possível guardar o número WhatsApp.');
     } finally {
-      setAGuardar(false);
+      setGuardando(false);
     }
   }
 
@@ -51,7 +70,7 @@ export default function WhatsApp() {
           Liga o WhatsApp deste utilizador ao BLUI.
         </p>
 
-        <div className="mt-8 bg-base-white border border-black/5 rounded-xs p-6">
+        <div className="mt-8 rounded-xs border border-black/5 bg-base-white p-6">
           <div className="flex items-center justify-between gap-4">
             <div>
               <h2 className="font-medium text-base-ink">
@@ -59,20 +78,22 @@ export default function WhatsApp() {
               </h2>
 
               <p className="mt-1 text-sm text-base-ink/50">
-                {estado?.whatsapp
-                  ? 'WhatsApp disponível'
-                  : 'WhatsApp não configurado'}
+                {carregando
+                  ? 'A verificar…'
+                  : estado?.conectado
+                    ? 'WhatsApp configurado'
+                    : 'WhatsApp não configurado'}
               </p>
             </div>
 
             <span
-              className={`px-3 py-1.5 rounded-xs text-xs font-medium ${
-                estado?.whatsapp
+              className={`rounded-xs px-3 py-1.5 text-xs font-medium ${
+                estado?.conectado
                   ? 'bg-green-50 text-green-700'
                   : 'bg-base-fog text-base-ink/50'
               }`}
             >
-              {estado?.whatsapp ? 'Ligado' : 'Desligado'}
+              {estado?.conectado ? 'Ligado' : 'Desligado'}
             </span>
           </div>
 
@@ -83,30 +104,37 @@ export default function WhatsApp() {
               </span>
 
               <input
+                type="tel"
                 value={numero}
                 onChange={(e) => setNumero(e.target.value)}
-                placeholder="+258..."
+                placeholder="+258849191742"
                 required
-                className="mt-1.5 w-full border border-black/10 rounded-xs px-3.5 py-2.5 text-sm text-base-ink placeholder:text-base-ink/30 focus:border-brand-500 outline-none"
+                className="mt-1.5 w-full rounded-xs border border-black/10 px-3.5 py-2.5 text-sm text-base-ink outline-none focus:border-brand-500"
               />
 
-              <span className="block mt-1.5 text-xs text-base-ink/40">
+              <span className="mt-1.5 block text-xs text-base-ink/40">
                 Usa o número no formato internacional.
               </span>
             </label>
 
             <button
               type="submit"
-              disabled={aGuardar}
-              className="bg-brand-500 text-white text-sm font-medium px-5 py-2.5 rounded-xs hover:bg-brand-600 disabled:opacity-50"
+              disabled={guardando || carregando}
+              className="rounded-xs bg-brand-500 px-5 py-2.5 text-sm font-medium text-white hover:bg-brand-600 disabled:opacity-50"
             >
-              {aGuardar ? 'A guardar…' : 'Ligar WhatsApp'}
+              {guardando ? 'A guardar…' : 'Guardar WhatsApp'}
             </button>
 
-            {mensagem && (
-              <p className="text-sm text-base-ink/60">
-                {mensagem}
-              </p>
+            {erro && (
+              <div className="rounded-xs border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                {erro}
+              </div>
+            )}
+
+            {sucesso && (
+              <div className="rounded-xs border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">
+                {sucesso}
+              </div>
             )}
           </form>
         </div>
@@ -124,7 +152,7 @@ export default function WhatsApp() {
 
           <Info
             titulo="Remarketing"
-            texto="Usa os contactos para automações futuras."
+            texto="Usa os contactos para automações."
           />
         </div>
       </div>
@@ -134,10 +162,11 @@ export default function WhatsApp() {
 
 function Info({ titulo, texto }) {
   return (
-    <div className="bg-base-white border border-black/5 rounded-xs p-5">
-      <h3 className="font-medium text-sm text-base-ink">
+    <div className="rounded-xs border border-black/5 bg-base-white p-5">
+      <h3 className="text-sm font-medium text-base-ink">
         {titulo}
       </h3>
+
       <p className="mt-2 text-xs leading-5 text-base-ink/50">
         {texto}
       </p>
