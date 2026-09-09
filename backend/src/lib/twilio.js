@@ -1,16 +1,33 @@
-const twilio = require("twilio");
+import twilio from 'twilio';
 
-const config = {
-  accountSid: process.env.TWILIO_ACCOUNT_SID || "",
-  apiKeySid: process.env.TWILIO_API_KEY_SID || "",
-  apiKeySecret: process.env.TWILIO_API_KEY_SECRET || "",
-  whatsappContentSid: process.env.TWILIO_WHATSAPP_CONTENT_SID || "",
-};
+const required = [
+  'TWILIO_ACCOUNT_SID',
+  'TWILIO_API_KEY_SID',
+  'TWILIO_API_KEY_SECRET',
+];
+
+function getConfig() {
+  const missing = required.filter((name) => !process.env[name]);
+
+  if (missing.length) {
+    const error = new Error(
+      `Twilio não configurado. Variáveis em falta: ${missing.join(', ')}`
+    );
+    error.code = 'TWILIO_NOT_CONFIGURED';
+    throw error;
+  }
+
+  return {
+    accountSid: process.env.TWILIO_ACCOUNT_SID,
+    apiKeySid: process.env.TWILIO_API_KEY_SID,
+    apiKeySecret: process.env.TWILIO_API_KEY_SECRET,
+    smsFrom: process.env.TWILIO_SMS_FROM || '',
+    whatsappFrom: process.env.TWILIO_WHATSAPP_FROM || '',
+  };
+}
 
 function getClient() {
-  if (!config.accountSid || !config.apiKeySid || !config.apiKeySecret) {
-    throw new Error("Twilio credentials are not configured");
-  }
+  const config = getConfig();
 
   return twilio(
     config.apiKeySid,
@@ -22,63 +39,61 @@ function getClient() {
 }
 
 function normalizeWhatsApp(value) {
-  if (!value) return value;
+  if (!value) return '';
 
-  const clean = String(value).trim();
-
-  if (clean.startsWith("whatsapp:")) {
-    return clean;
-  }
-
-  return `whatsapp:${clean}`;
+  return value.startsWith('whatsapp:')
+    ? value
+    : `whatsapp:${value}`;
 }
 
-async function sendWhatsApp({
-  to,
-  body,
-  mediaUrl,
-  from,
-  contentSid,
-  contentVariables,
-}) {
-  const client = getClient();
+async function sendSMS({ to, body }) {
+  const config = getConfig();
 
-  const sender =
-    from ||
-    process.env.TWILIO_WHATSAPP_FROM ||
-    "";
+  if (!config.smsFrom) {
+    throw new Error('TWILIO_SMS_FROM não configurado.');
+  }
+
+  if (!to || !body) {
+    throw new Error('to e body são obrigatórios.');
+  }
+
+  return getClient().messages.create({
+    from: config.smsFrom,
+    to,
+    body,
+  });
+}
+
+async function sendWhatsApp({ to, body, mediaUrl, from }) {
+  const config = getConfig();
+
+  const sender = from || config.whatsappFrom;
+
+  if (!sender) {
+    throw new Error('Remetente WhatsApp não configurado.');
+  }
+
+  if (!to || !body) {
+    throw new Error('to e body são obrigatórios.');
+  }
 
   const message = {
     from: normalizeWhatsApp(sender),
     to: normalizeWhatsApp(to),
+    body,
   };
-
-  const templateSid =
-    contentSid ||
-    config.whatsappContentSid ||
-    "";
-
-  if (templateSid) {
-    message.contentSid = templateSid;
-
-    if (contentVariables !== undefined && contentVariables !== null) {
-      message.contentVariables =
-        typeof contentVariables === "string"
-          ? contentVariables
-          : JSON.stringify(contentVariables);
-    }
-  } else {
-    message.body = body || "";
-  }
 
   if (mediaUrl) {
     message.mediaUrl = [mediaUrl];
   }
 
-  return client.messages.create(message);
+  return getClient().messages.create(message);
 }
 
-module.exports = {
+export {
+  getConfig,
+  getClient,
+  sendSMS,
   sendWhatsApp,
   normalizeWhatsApp,
 };
