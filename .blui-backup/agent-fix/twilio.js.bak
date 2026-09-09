@@ -30,9 +30,7 @@ function getClient() {
   return twilio(
     config.apiKeySid,
     config.apiKeySecret,
-    {
-      accountSid: config.accountSid,
-    }
+    { accountSid: config.accountSid }
   );
 }
 
@@ -44,6 +42,24 @@ function normalizeWhatsApp(value) {
   return clean.toLowerCase().startsWith('whatsapp:')
     ? clean
     : `whatsapp:${clean}`;
+}
+
+async function sendSMS({ to, body }) {
+  const config = getConfig();
+
+  if (!config.smsFrom) {
+    throw new Error('TWILIO_SMS_FROM não configurado.');
+  }
+
+  if (!to || !body) {
+    throw new Error('to e body são obrigatórios.');
+  }
+
+  return getClient().messages.create({
+    from: config.smsFrom,
+    to,
+    body,
+  });
 }
 
 async function sendWhatsApp({
@@ -67,9 +83,7 @@ async function sendWhatsApp({
   }
 
   const templateSid =
-    contentSid ||
-    config.whatsappContentSid ||
-    '';
+    contentSid || config.whatsappContentSid || '';
 
   const message = {
     from: normalizeWhatsApp(sender),
@@ -124,6 +138,7 @@ async function sendWhatsApp({
 export {
   getConfig,
   getClient,
+  sendSMS,
   sendWhatsApp,
   normalizeWhatsApp,
 };
