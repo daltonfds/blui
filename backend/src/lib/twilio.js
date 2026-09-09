@@ -1,33 +1,16 @@
-import twilio from 'twilio';
+const twilio = require("twilio");
 
-const required = [
-  'TWILIO_ACCOUNT_SID',
-  'TWILIO_API_KEY_SID',
-  'TWILIO_API_KEY_SECRET',
-];
-
-function getConfig() {
-  const missing = required.filter((name) => !process.env[name]);
-
-  if (missing.length) {
-    const error = new Error(
-      `Twilio não configurado. Variáveis em falta: ${missing.join(', ')}`
-    );
-    error.code = 'TWILIO_NOT_CONFIGURED';
-    throw error;
-  }
-
-  return {
-    accountSid: process.env.TWILIO_ACCOUNT_SID,
-    apiKeySid: process.env.TWILIO_API_KEY_SID,
-    apiKeySecret: process.env.TWILIO_API_KEY_SECRET,
-    smsFrom: process.env.TWILIO_SMS_FROM || '',
-    whatsappFrom: process.env.TWILIO_WHATSAPP_FROM || '',
-  };
-}
+const config = {
+  accountSid: process.env.TWILIO_ACCOUNT_SID || "",
+  apiKeySid: process.env.TWILIO_API_KEY_SID || "",
+  apiKeySecret: process.env.TWILIO_API_KEY_SECRET || "",
+  whatsappContentSid: process.env.TWILIO_WHATSAPP_CONTENT_SID || "",
+};
 
 function getClient() {
-  const config = getConfig();
+  if (!config.accountSid || !config.apiKeySid || !config.apiKeySecret) {
+    throw new Error("Twilio credentials are not configured");
+  }
 
   return twilio(
     config.apiKeySid,
@@ -39,61 +22,63 @@ function getClient() {
 }
 
 function normalizeWhatsApp(value) {
-  if (!value) return '';
+  if (!value) return value;
 
-  return value.startsWith('whatsapp:')
-    ? value
-    : `whatsapp:${value}`;
+  const clean = String(value).trim();
+
+  if (clean.startsWith("whatsapp:")) {
+    return clean;
+  }
+
+  return `whatsapp:${clean}`;
 }
 
-async function sendSMS({ to, body }) {
-  const config = getConfig();
+async function sendWhatsApp({
+  to,
+  body,
+  mediaUrl,
+  from,
+  contentSid,
+  contentVariables,
+}) {
+  const client = getClient();
 
-  if (!config.smsFrom) {
-    throw new Error('TWILIO_SMS_FROM não configurado.');
-  }
-
-  if (!to || !body) {
-    throw new Error('to e body são obrigatórios.');
-  }
-
-  return getClient().messages.create({
-    from: config.smsFrom,
-    to,
-    body,
-  });
-}
-
-async function sendWhatsApp({ to, body, mediaUrl, from }) {
-  const config = getConfig();
-
-  const sender = from || config.whatsappFrom;
-
-  if (!sender) {
-    throw new Error('Remetente WhatsApp não configurado.');
-  }
-
-  if (!to || !body) {
-    throw new Error('to e body são obrigatórios.');
-  }
+  const sender =
+    from ||
+    process.env.TWILIO_WHATSAPP_FROM ||
+    "";
 
   const message = {
     from: normalizeWhatsApp(sender),
     to: normalizeWhatsApp(to),
-    body,
   };
+
+  const templateSid =
+    contentSid ||
+    config.whatsappContentSid ||
+    "";
+
+  if (templateSid) {
+    message.contentSid = templateSid;
+
+    if (contentVariables !== undefined && contentVariables !== null) {
+      message.contentVariables =
+        typeof contentVariables === "string"
+          ? contentVariables
+          : JSON.stringify(contentVariables);
+    }
+  } else {
+    message.body = body || "";
+  }
 
   if (mediaUrl) {
     message.mediaUrl = [mediaUrl];
   }
 
-  return getClient().messages.create(message);
+  return client.messages.create(message);
 }
 
-export {
-  getConfig,
-  getClient,
-  sendSMS,
+module.exports = {
   sendWhatsApp,
   normalizeWhatsApp,
 };
