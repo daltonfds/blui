@@ -1,30 +1,26 @@
 import twilio from 'twilio';
 
-const required = [
-  'TWILIO_ACCOUNT_SID',
-  'TWILIO_API_KEY_SID',
-  'TWILIO_API_KEY_SECRET',
-];
-
 function getConfig() {
-  const missing = required.filter((name) => !process.env[name]);
+  const accountSid = process.env.TWILIO_ACCOUNT_SID || '';
+  const apiKeySid = process.env.TWILIO_API_KEY_SID || '';
+  const apiKeySecret = process.env.TWILIO_API_KEY_SECRET || '';
 
-  if (missing.length) {
-    const error = new Error(
-      `Twilio não configurado. Variáveis em falta: ${missing.join(', ')}`
+  if (!accountSid || !apiKeySid || !apiKeySecret) {
+    throw new Error(
+      'Twilio não configurado: TWILIO_ACCOUNT_SID, TWILIO_API_KEY_SID e TWILIO_API_KEY_SECRET são obrigatórios.'
     );
-    error.code = 'TWILIO_NOT_CONFIGURED';
-    throw error;
   }
 
   return {
-    accountSid: process.env.TWILIO_ACCOUNT_SID,
-    apiKeySid: process.env.TWILIO_API_KEY_SID,
-    apiKeySecret: process.env.TWILIO_API_KEY_SECRET,
+    accountSid,
+    apiKeySid,
+    apiKeySecret,
     smsFrom: process.env.TWILIO_SMS_FROM || '',
     whatsappFrom: process.env.TWILIO_WHATSAPP_FROM || '',
-    whatsappContentSid: process.env.TWILIO_WHATSAPP_CONTENT_SID || '',
-    whatsappContentVariables: process.env.TWILIO_WHATSAPP_CONTENT_VARIABLES || '',
+    whatsappContentSid:
+      process.env.TWILIO_WHATSAPP_CONTENT_SID || '',
+    whatsappContentVariables:
+      process.env.TWILIO_WHATSAPP_CONTENT_VARIABLES || '',
   };
 }
 
@@ -34,18 +30,18 @@ function getClient() {
   return twilio(
     config.apiKeySid,
     config.apiKeySecret,
-    {
-      accountSid: config.accountSid,
-    }
+    { accountSid: config.accountSid }
   );
 }
 
 function normalizeWhatsApp(value) {
   if (!value) return '';
 
-  return value.startsWith('whatsapp:')
-    ? value
-    : `whatsapp:${value}`;
+  const clean = String(value).trim();
+
+  return clean.toLowerCase().startsWith('whatsapp:')
+    ? clean
+    : `whatsapp:${clean}`;
 }
 
 async function sendSMS({ to, body }) {
@@ -66,7 +62,14 @@ async function sendSMS({ to, body }) {
   });
 }
 
-async function sendWhatsApp({ to, body, mediaUrl, from, contentVariables }) {
+async function sendWhatsApp({
+  to,
+  body,
+  mediaUrl,
+  from,
+  contentSid,
+  contentVariables,
+}) {
   const config = getConfig();
 
   const sender = from || config.whatsappFrom;
@@ -75,19 +78,25 @@ async function sendWhatsApp({ to, body, mediaUrl, from, contentVariables }) {
     throw new Error('Remetente WhatsApp não configurado.');
   }
 
-  if (!to || !body) {
-    throw new Error('to e body são obrigatórios.');
+  if (!to) {
+    throw new Error('to é obrigatório.');
   }
+
+  const templateSid =
+    contentSid || config.whatsappContentSid || '';
 
   const message = {
     from: normalizeWhatsApp(sender),
     to: normalizeWhatsApp(to),
   };
 
-  if (config.whatsappContentSid) {
-    message.contentSid = config.whatsappContentSid;
+  if (templateSid) {
+    message.contentSid = templateSid;
 
-    const variables = contentVariables || config.whatsappContentVariables;
+    const variables =
+      contentVariables ??
+      config.whatsappContentVariables;
+
     if (variables) {
       message.contentVariables =
         typeof variables === 'string'
@@ -95,6 +104,12 @@ async function sendWhatsApp({ to, body, mediaUrl, from, contentVariables }) {
           : JSON.stringify(variables);
     }
   } else {
+    if (!body) {
+      throw new Error(
+        'body é obrigatório quando não existe ContentSid.'
+      );
+    }
+
     message.body = body;
   }
 
@@ -102,7 +117,22 @@ async function sendWhatsApp({ to, body, mediaUrl, from, contentVariables }) {
     message.mediaUrl = [mediaUrl];
   }
 
-  return getClient().messages.create(message);
+  console.log('[Twilio outbound]', {
+    to: message.to,
+    from: message.from,
+    contentSid: message.contentSid || null,
+  });
+
+  const result =
+    await getClient().messages.create(message);
+
+  console.log('[Twilio outbound OK]', {
+    sid: result.sid,
+    status: result.status,
+    errorCode: result.errorCode || null,
+  });
+
+  return result;
 }
 
 export {
