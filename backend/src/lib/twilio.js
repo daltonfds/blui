@@ -23,6 +23,8 @@ function getConfig() {
     apiKeySecret: process.env.TWILIO_API_KEY_SECRET,
     smsFrom: process.env.TWILIO_SMS_FROM || '',
     whatsappFrom: process.env.TWILIO_WHATSAPP_FROM || '',
+    whatsappContentSid: process.env.TWILIO_WHATSAPP_CONTENT_SID || '',
+    whatsappContentVariables: process.env.TWILIO_WHATSAPP_CONTENT_VARIABLES || '',
   };
 }
 
@@ -64,7 +66,7 @@ async function sendSMS({ to, body }) {
   });
 }
 
-async function sendWhatsApp({ to, body, mediaUrl, from }) {
+async function sendWhatsApp({ to, body, mediaUrl, from, contentVariables }) {
   const config = getConfig();
 
   const sender = from || config.whatsappFrom;
@@ -80,8 +82,21 @@ async function sendWhatsApp({ to, body, mediaUrl, from }) {
   const message = {
     from: normalizeWhatsApp(sender),
     to: normalizeWhatsApp(to),
-    body,
   };
+
+  if (config.whatsappContentSid) {
+    message.contentSid = config.whatsappContentSid;
+
+    const variables = contentVariables || config.whatsappContentVariables;
+    if (variables) {
+      message.contentVariables =
+        typeof variables === 'string'
+          ? variables
+          : JSON.stringify(variables);
+    }
+  } else {
+    message.body = body;
+  }
 
   if (mediaUrl) {
     message.mediaUrl = [mediaUrl];
