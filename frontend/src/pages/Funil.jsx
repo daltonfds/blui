@@ -82,8 +82,14 @@ export default function Funil() {
       const funil = resposta.funis?.[0];
 
       if (funil) {
-        const lista = (funil.funnel_stages || [])
+        const etapasServidor = (funil.funnel_stages || [])
           .sort((a, b) => a.ordem - b.ordem);
+
+        // Se existir um funil mas ainda não tiver etapas,
+        // mantém o construtor utilizável com as etapas padrão.
+        const lista = etapasServidor.length
+          ? etapasServidor
+          : etapasIniciais;
 
         setFunilId(funil.id);
         setNomeFunil(funil.nome || 'Funil de Vendas');
