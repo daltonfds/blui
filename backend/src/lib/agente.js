@@ -1,7 +1,7 @@
 import { supabase } from '../config/supabase.js';
 
 const GEMINI_MODEL =
-  process.env.GEMINI_MODEL || 'gemini-2.5-flash-lite';
+  process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite';
 
 const GEMINI_URL =
   'https://generativelanguage.googleapis.com/v1beta/models';
