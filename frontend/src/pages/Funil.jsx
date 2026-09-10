@@ -1,4 +1,5 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { api } from '../lib/api.js';
 
 const etapasIniciais = [
   {
@@ -58,40 +59,175 @@ function novoId() {
 }
 
 export default function Funil() {
-  const [etapas, setEtapas] = useState(() => {
-    try {
-      const guardado = localStorage.getItem('blui_funil');
-      return guardado ? JSON.parse(guardado) : etapasIniciais;
-    } catch {
-      return etapasIniciais;
-    }
-  });
-
-  const [selecionada, setSelecionada] = useState(etapas[0]?.id || null);
-  const [nomeFunil, setNomeFunil] = useState(() => localStorage.getItem('blui_funil_nome') || 'Funil de Vendas');
-  const [editandoNome, setEditandoNome] = useState(false);
+  const [funilId, setFunilId] = useState(null);
+  const [etapas, setEtapas] = useState([]);
+  const [nomeFunil, setNomeFunil] = useState('Funil de Vendas');
+  const [objetivoFunil, setObjetivoFunil] = useState('');
+  const [selecionada, setSelecionada] = useState(null);
   const [modo, setModo] = useState('funil');
+  const [carregando, setCarregando] = useState(true);
+  const [guardando, setGuardando] = useState(false);
+  const [mensagem, setMensagem] = useState('');
+  const [erro, setErro] = useState('');
 
-  const etapaAtual = etapas.find((e) => e.id === selecionada);
+  const etapaAtual = etapas.find((e) => e.id === selecionada) || etapas[0];
 
-  const totalEtapas = etapas.length;
+  const carregar = async () => {
+    setCarregando(true);
+    setErro('');
 
-  const salvar = (novasEtapas = etapas, novoNome = nomeFunil) => {
-    setEtapas(novasEtapas);
-    localStorage.setItem('blui_funil', JSON.stringify(novasEtapas));
-    localStorage.setItem('blui_funil_nome', novoNome);
+    try {
+      const resposta = await api.get('/api/funil');
+      const funil = resposta.funis?.[0];
+
+      if (funil) {
+        const lista = (funil.funnel_stages || [])
+          .sort((a, b) => a.ordem - b.ordem);
+
+        setFunilId(funil.id);
+        setNomeFunil(funil.nome || 'Funil de Vendas');
+        setObjetivoFunil(funil.objetivo || '');
+        setEtapas(lista);
+        setSelecionada(lista[0]?.id || null);
+
+        localStorage.setItem('blui_funil', JSON.stringify(lista));
+        localStorage.setItem('blui_funil_nome', funil.nome || 'Funil de Vendas');
+      } else {
+        const locais = JSON.parse(
+          localStorage.getItem('blui_funil') || 'null'
+        );
+
+        const lista = locais?.length ? locais : etapasIniciais;
+
+        setEtapas(lista);
+        setSelecionada(lista[0]?.id || null);
+      }
+    } catch (e) {
+      setErro(e.message || 'Não foi possível carregar o funil.');
+
+      const locais = JSON.parse(
+        localStorage.getItem('blui_funil') || 'null'
+      );
+
+      const lista = locais?.length ? locais : etapasIniciais;
+
+      setEtapas(lista);
+      setSelecionada(lista[0]?.id || null);
+    } finally {
+      setCarregando(false);
+    }
+  };
+
+  useEffect(() => {
+    carregar();
+  }, []);
+
+  const guardarTudo = async () => {
+    setGuardando(true);
+    setMensagem('');
+    setErro('');
+
+    try {
+      let id = funilId;
+
+      if (!id) {
+        const criado = await api.post('/api/funil', {
+          nome: nomeFunil,
+          objetivo: objetivoFunil,
+          etapas: etapas.map(({ id: _id, ...etapa }) => etapa),
+        });
+
+        id = criado.funil.id;
+
+        const lista = criado.funil.funnel_stages || [];
+
+        setFunilId(id);
+        setEtapas(lista);
+        setSelecionada(lista[0]?.id || null);
+      } else {
+        await api.put(`/api/funil/${id}`, {
+          nome: nomeFunil,
+          objetivo: objetivoFunil,
+          ativo: true,
+        });
+
+        const servidor = await api.get('/api/funil');
+        const atual = servidor.funis?.find((f) => f.id === id);
+        const existentes = new Set(
+          (atual?.funnel_stages || []).map((e) => e.id)
+        );
+
+        for (let i = 0; i < etapas.length; i++) {
+          const etapa = etapas[i];
+
+          if (existentes.has(etapa.id)) {
+            await api.put(
+              `/api/funil/${id}/etapas/${etapa.id}`,
+              { ...etapa, ordem: i }
+            );
+          } else {
+            const resposta = await api.post(
+              `/api/funil/${id}/etapas`,
+              etapa
+            );
+
+            setEtapas((lista) =>
+              lista.map((x) =>
+                x.id === etapa.id ? resposta.etapa : x
+              )
+            );
+          }
+        }
+
+        const ids = etapas
+          .map((e) => e.id)
+          .filter((id) => !String(id).startsWith('local-'));
+
+        if (ids.length) {
+          await api.put(
+            `/api/funil/${id}/etapas-ordem`,
+            { ids }
+          );
+        }
+      }
+
+      localStorage.setItem(
+        'blui_funil',
+        JSON.stringify(etapas)
+      );
+
+      localStorage.setItem(
+        'blui_funil_nome',
+        nomeFunil
+      );
+
+      setMensagem(
+        'Funil guardado e sincronizado com o servidor.'
+      );
+
+      setTimeout(() => setMensagem(''), 3000);
+    } catch (e) {
+      setErro(
+        e.message || 'Não foi possível guardar o funil.'
+      );
+    } finally {
+      setGuardando(false);
+    }
   };
 
   const atualizarEtapa = (campo, valor) => {
-    const novas = etapas.map((e) =>
-      e.id === selecionada ? { ...e, [campo]: valor } : e
+    setEtapas((lista) =>
+      lista.map((e) =>
+        e.id === selecionada
+          ? { ...e, [campo]: valor }
+          : e
+      )
     );
-    salvar(novas);
   };
 
   const adicionarEtapa = () => {
     const nova = {
-      id: novoId(),
+      id: `local-${Date.now()}`,
       nome: 'Nova etapa',
       descricao: '',
       objetivo: '',
@@ -101,46 +237,55 @@ export default function Funil() {
       acao: '',
     };
 
-    const novas = [...etapas, nova];
-    salvar(novas);
+    setEtapas((lista) => [...lista, nova]);
     setSelecionada(nova.id);
   };
 
-  const removerEtapa = () => {
+  const removerEtapa = async () => {
     if (!etapaAtual || etapas.length <= 1) return;
 
-    const novas = etapas.filter((e) => e.id !== selecionada);
-    salvar(novas);
-    setSelecionada(novas[Math.max(0, etapas.findIndex((e) => e.id === selecionada) - 1)]?.id || novas[0].id);
+    try {
+      if (
+        funilId &&
+        !String(etapaAtual.id).startsWith('local-')
+      ) {
+        await api.del(
+          `/api/funil/${funilId}/etapas/${etapaAtual.id}`
+        );
+      }
+
+      const lista = etapas.filter(
+        (e) => e.id !== etapaAtual.id
+      );
+
+      setEtapas(lista);
+      setSelecionada(lista[0]?.id || null);
+    } catch (e) {
+      setErro(e.message);
+    }
   };
 
   const moverEtapa = (direcao) => {
-    const index = etapas.findIndex((e) => e.id === selecionada);
-    const novoIndex = index + direcao;
-
-    if (index < 0 || novoIndex < 0 || novoIndex >= etapas.length) return;
-
-    const novas = [...etapas];
-    [novas[index], novas[novoIndex]] = [novas[novoIndex], novas[index]];
-    salvar(novas);
-  };
-
-  const adicionarPergunta = () => {
-    if (!etapaAtual) return;
-    atualizarEtapa('perguntas', [...(etapaAtual.perguntas || []), 'Nova pergunta']);
-  };
-
-  const atualizarPergunta = (index, valor) => {
-    const perguntas = [...(etapaAtual.perguntas || [])];
-    perguntas[index] = valor;
-    atualizarEtapa('perguntas', perguntas);
-  };
-
-  const removerPergunta = (index) => {
-    atualizarEtapa(
-      'perguntas',
-      (etapaAtual.perguntas || []).filter((_, i) => i !== index)
+    const i = etapas.findIndex(
+      (e) => e.id === selecionada
     );
+
+    const j = i + direcao;
+
+    if (
+      i < 0 ||
+      j < 0 ||
+      j >= etapas.length
+    ) return;
+
+    const lista = [...etapas];
+
+    [lista[i], lista[j]] = [
+      lista[j],
+      lista[i],
+    ];
+
+    setEtapas(lista);
   };
 
   const resumo = useMemo(() => ({
@@ -149,12 +294,31 @@ export default function Funil() {
     conhecimento: etapas.filter((e) => e.conhecimento?.trim()).length,
   }), [etapas]);
 
+  if (carregando) {
+    return (
+      <div className="flex min-h-full items-center justify-center bg-slate-50 p-8 text-sm text-slate-500">
+        A carregar o funil...
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-full bg-slate-50 p-4 md:p-6">
       <div className="mx-auto max-w-[1500px]">
         <div className="mb-5 flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm md:flex-row md:items-center md:justify-between">
-          <div>
-            {editandoNome ? (
+          <div className="flex-1">
+            <input
+              value={nomeFunil}
+              onChange={(e) => setNomeFunil(e.target.value)}
+              className="w-full max-w-xl rounded-lg border border-transparent px-2 py-1 text-2xl font-bold text-slate-900 outline-none focus:border-blue-300"
+            />
+            <input
+              value={objetivoFunil}
+              onChange={(e) => setObjetivoFunil(e.target.value)}
+              placeholder="Objetivo do funil (opcional)"
+              className="mt-1 w-full max-w-xl rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-blue-500"
+            />
+            {false && (
               <input
                 autoFocus
                 value={nomeFunil}
@@ -184,7 +348,14 @@ export default function Funil() {
             </p>
           </div>
 
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
+            <button
+              onClick={guardarTudo}
+              disabled={guardando}
+              className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
+            >
+              {guardando ? 'A guardar...' : 'Guardar funil'}
+            </button>
             <button
               onClick={() => setModo('funil')}
               className={`rounded-xl px-4 py-2 text-sm font-semibold ${
@@ -203,6 +374,16 @@ export default function Funil() {
             </button>
           </div>
         </div>
+
+        {(mensagem || erro) && (
+          <div className={`mb-5 rounded-xl border p-3 text-sm ${
+            erro
+              ? 'border-red-200 bg-red-50 text-red-700'
+              : 'border-emerald-200 bg-emerald-50 text-emerald-700'
+          }`}>
+            {erro || mensagem}
+          </div>
+        )}
 
         <div className="mb-5 grid grid-cols-1 gap-3 sm:grid-cols-3">
           <div className="rounded-2xl border border-slate-200 bg-white p-4">
