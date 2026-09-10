@@ -307,42 +307,42 @@ export default function Funil() {
       <div className="mx-auto max-w-[1500px]">
         <div className="mb-5 flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm md:flex-row md:items-center md:justify-between">
           <div className="flex-1">
-            <input
-              value={nomeFunil}
-              onChange={(e) => setNomeFunil(e.target.value)}
-              className="w-full max-w-xl rounded-lg border border-transparent px-2 py-1 text-2xl font-bold text-slate-900 outline-none focus:border-blue-300"
-            />
-            <input
-              value={objetivoFunil}
-              onChange={(e) => setObjetivoFunil(e.target.value)}
-              placeholder="Objetivo do funil (opcional)"
-              className="mt-1 w-full max-w-xl rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-blue-500"
-            />
-            {false && (
-              <input
-                autoFocus
-                value={nomeFunil}
-                onChange={(e) => setNomeFunil(e.target.value)}
-                onBlur={() => {
-                  setEditandoNome(false);
-                  salvar(etapas, nomeFunil);
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
+            {editandoNome ? (
+              <div className="flex items-center gap-2">
+                <input
+                  autoFocus
+                  value={nomeFunil}
+                  onChange={(e) => setNomeFunil(e.target.value)}
+                  onBlur={() => {
                     setEditandoNome(false);
-                    salvar(etapas, nomeFunil);
-                  }
-                }}
-                className="rounded-lg border border-blue-300 px-3 py-2 text-2xl font-bold outline-none"
-              />
+                    localStorage.setItem("blui_funil_nome", nomeFunil);
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      setEditandoNome(false);
+                      localStorage.setItem("blui_funil_nome", nomeFunil);
+                    }
+                  }}
+                  className="rounded-lg border border-blue-300 px-3 py-2 text-2xl font-bold outline-none"
+                />
+              </div>
             ) : (
               <button
+                type="button"
                 onClick={() => setEditandoNome(true)}
                 className="text-left text-2xl font-bold text-slate-900 hover:text-blue-600"
               >
                 {nomeFunil}
               </button>
             )}
+
+            <input
+              value={objetivoFunil}
+              onChange={(e) => setObjetivoFunil(e.target.value)}
+              placeholder="Objetivo do funil (opcional)"
+              className="mt-1 w-full max-w-xl rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-blue-500"
+            />
+
             <p className="mt-1 text-sm text-slate-500">
               Constrói o processo comercial que o chatbot deve seguir.
             </p>
