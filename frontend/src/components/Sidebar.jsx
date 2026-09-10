@@ -257,7 +257,7 @@ export default function Sidebar() {
                 })}
                 className="w-full flex items-center justify-between px-3 mb-1.5 text-left text-[10px] font-bold tracking-[0.14em] text-base-ink/40 hover:text-base-ink"
               >
-                <span>{traduzir(grupo.titulo, idioma)}</span>
+                <span className="flex items-center gap-2">{grupo.titulo === 'PAINEL' && <IconGrid />}{grupo.titulo === 'NÚMEROS' && <IconLayers />}{grupo.titulo === 'CONTACTOS' && <IconPeople />}{grupo.titulo === 'CONVERSAS' && <IconPeople />}{grupo.titulo === 'PRODUTOS' && <IconLayers />}{grupo.titulo === 'LOJA' && <IconLayers />}{grupo.titulo === 'SITES' && <IconLayers />}{grupo.titulo === 'CAMPANHAS' && <IconBolt />}{grupo.titulo === 'AUTOMAÇÕES' && <IconBolt />}{grupo.titulo === 'DEFINIÇÕES' && <IconSettings />}{traduzir(grupo.titulo, idioma)}</span>
                 <span className={`transition-transform ${aberto ? 'rotate-180' : ''}`}>⌄</span>
               </button>
               {aberto && (
