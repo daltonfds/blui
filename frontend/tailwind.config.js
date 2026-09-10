@@ -6,18 +6,18 @@ export default {
       colors: {
         base: {
           white: '#FFFFFF',
-          fog: '#F6F8F7',
-          ink: '#12140F',
-          charcoal: '#1C1F19',
+          fog: '#F5F8FF',
+          ink: '#0B1220',
+          charcoal: '#111827',
         },
         brand: {
-          50: '#EAFBF1',
-          100: '#CFF5DF',
-          300: '#7FE0AA',
-          500: '#1FAE64',
-          600: '#178C50',
-          700: '#0F6B3D',
-          900: '#0A3D24',
+          50: '#EFF6FF',
+          100: '#DBEAFE',
+          300: '#93C5FD',
+          500: '#2563EB',
+          600: '#1D4ED8',
+          700: '#1E40AF',
+          900: '#172554',
         },
         signal: {
           red: '#E23B3B',
@@ -30,7 +30,7 @@ export default {
         xs: '6px',
       },
       boxShadow: {
-        card: '0 1px 2px rgba(18, 20, 15, 0.06), 0 1px 0 rgba(18, 20, 15, 0.04)',
+        card: '0 1px 2px rgba(11, 18, 32, 0.06), 0 1px 0 rgba(11, 18, 32, 0.04)',
       },
     },
   },

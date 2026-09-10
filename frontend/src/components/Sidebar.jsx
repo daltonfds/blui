@@ -12,6 +12,60 @@ import {
   IconLogout,
 } from './Icons.jsx';
 
+
+const traducoesEN = {
+  PAINEL: 'DASHBOARD',
+  'Visão geral': 'Overview',
+  Funil: 'Funnel',
+  Receita: 'Revenue',
+  Oportunidades: 'Opportunities',
+  NÚMEROS: 'NUMBERS',
+  'Ler números de imagens': 'Read numbers from images',
+  CONTACTOS: 'CONTACTS',
+  Todos: 'All',
+  Clientes: 'Customers',
+  Segmentos: 'Segments',
+  Etiquetas: 'Tags',
+  CONVERSAS: 'CONVERSATIONS',
+  PRODUTOS: 'PRODUCTS',
+  Categorias: 'Categories',
+  'Base do agente': 'Agent knowledge base',
+  LOJA: 'STORE',
+  Pedidos: 'Orders',
+  Carrinhos: 'Carts',
+  SITES: 'SITES',
+  'Páginas de venda': 'Sales pages',
+  Formulários: 'Forms',
+  Domínios: 'Domains',
+  CAMPANHAS: 'CAMPAIGNS',
+  Anúncios: 'Ads',
+  Públicos: 'Audiences',
+  Resultados: 'Results',
+  AUTOMAÇÕES: 'AUTOMATIONS',
+  'Carrinho abandonado': 'Abandoned cart',
+  'Checkout abandonado': 'Abandoned checkout',
+  'Pós-venda': 'Post-purchase',
+  Reativação: 'Reactivation',
+  DEFINIÇÕES: 'SETTINGS',
+  'Minha conta': 'My account',
+  Negócio: 'Business',
+  Agente: 'Agent',
+  Canais: 'Channels',
+  Pagamentos: 'Payments',
+  Entregas: 'Delivery',
+  Segurança: 'Security',
+  CONTA: 'ACCOUNT',
+  Assinatura: 'Subscription',
+  Suporte: 'Support',
+  Admin: 'Admin',
+  'Terminar sessão': 'Sign out',
+};
+
+function traduzir(texto, idioma) {
+  if (idioma !== 'en') return texto;
+  return traducoesEN[texto] || texto;
+}
+
 const grupos = [
   {
     titulo: 'PAINEL',
@@ -147,6 +201,15 @@ export default function Sidebar() {
   const { sair } = useAuth();
   const navigate = useNavigate();
   const [ehAdmin, setEhAdmin] = useState(false);
+  const [idioma, setIdioma] = useState(() => {
+    const salvo = localStorage.getItem('blui-language');
+    return salvo === 'en' ? 'en' : 'pt';
+  });
+
+  useEffect(() => {
+    document.documentElement.lang = idioma === 'en' ? 'en' : 'pt-PT';
+    localStorage.setItem('blui-language', idioma);
+  }, [idioma]);
 
   useEffect(() => {
     let ativo = true;
@@ -173,14 +236,18 @@ export default function Sidebar() {
 
       <nav className="flex-1 space-y-5">
         {grupos.map((grupo) => (
-          <section key={grupo.titulo}>
+          <section key={traduzir(grupo.titulo, idioma)}>
             <div className="px-3 mb-1.5 text-[10px] font-bold tracking-[0.14em] text-base-ink/40">
-              {grupo.titulo}
+              {traduzir(grupo.titulo, idioma)}
             </div>
 
             <div className="space-y-0.5">
               {grupo.itens.map((item) => (
-                <Item key={item.to} {...item} />
+                <Item
+                  key={item.to}
+                  {...item}
+                  label={traduzir(item.label, idioma)}
+                />
               ))}
             </div>
           </section>
@@ -188,30 +255,63 @@ export default function Sidebar() {
 
         <section>
           <div className="px-3 mb-1.5 text-[10px] font-bold tracking-[0.14em] text-base-ink/40">
-            CONTA
+            {traduzir('CONTA', idioma)}
           </div>
 
           <Item
             to="/assinatura"
-            label="Assinatura"
+            label={traduzir("Assinatura", idioma)}
             Icon={IconSettings}
           />
 
           <Item
             to="/suporte"
-            label="Suporte"
+            label={traduzir("Suporte", idioma)}
             Icon={IconPeople}
           />
 
           {ehAdmin && (
             <Item
               to="/admin"
-              label="Admin"
+              label={traduzir("Admin", idioma)}
               Icon={IconBolt}
             />
           )}
         </section>
       </nav>
+
+
+      <div className="px-3 py-3 border-t border-black/5">
+        <div className="mb-2 text-[10px] font-bold tracking-[0.14em] text-base-ink/40">
+          IDIOMA / LANGUAGE
+        </div>
+        <div className="grid grid-cols-2 gap-1 rounded-xs bg-base-fog p-1">
+          <button
+            type="button"
+            onClick={() => setIdioma('pt')}
+            className={`rounded-xs px-2 py-1.5 text-xs font-semibold transition-colors ${
+              idioma === 'pt'
+                ? 'bg-base-white text-brand-700 shadow-sm'
+                : 'text-base-ink/50 hover:text-base-ink'
+            }`}
+            aria-pressed={idioma === 'pt'}
+          >
+            Português
+          </button>
+          <button
+            type="button"
+            onClick={() => setIdioma('en')}
+            className={`rounded-xs px-2 py-1.5 text-xs font-semibold transition-colors ${
+              idioma === 'en'
+                ? 'bg-base-white text-brand-700 shadow-sm'
+                : 'text-base-ink/50 hover:text-base-ink'
+            }`}
+            aria-pressed={idioma === 'en'}
+          >
+            English
+          </button>
+        </div>
+      </div>
 
       <div className="pt-4 mt-4 border-t border-black/5">
         <button
@@ -219,7 +319,7 @@ export default function Sidebar() {
           className="w-full flex items-center gap-3 rounded-xs px-3 py-2.5 text-sm font-medium text-base-ink/60 hover:bg-base-fog hover:text-signal-red transition-colors"
         >
           <IconLogout />
-          <span>Terminar sessão</span>
+          <span>{traduzir('Terminar sessão', idioma)}</span>
         </button>
       </div>
     </aside>
