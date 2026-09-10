@@ -1,7 +1,10 @@
 import { supabase } from '../config/supabase.js';
 
-const OPENAI_URL = 'https://api.openai.com/v1/responses';
-const DEFAULT_MODEL = process.env.OPENAI_MODEL || 'gpt-4.1-mini';
+const GEMINI_MODEL =
+  process.env.GEMINI_MODEL || 'gemini-2.5-flash-lite';
+
+const GEMINI_URL =
+  'https://generativelanguage.googleapis.com/v1beta/models';
 
 function limparTexto(value, fallback = '') {
   return String(value ?? fallback).trim();
@@ -9,6 +12,7 @@ function limparTexto(value, fallback = '') {
 
 function limitar(texto, max = 12000) {
   const valor = limparTexto(texto);
+
   return valor.length > max
     ? valor.slice(0, max) + '\n[conteúdo truncado]'
     : valor;
@@ -60,17 +64,21 @@ async function carregarHistorico(contactoId) {
   return (data || [])
     .reverse()
     .map((mensagem) => ({
-      role: mensagem.remetente === 'cliente'
-        ? 'user'
-        : 'assistant',
-      content: limitar(mensagem.conteudo, 3000),
+      role:
+        mensagem.remetente === 'cliente'
+          ? 'user'
+          : 'model',
+      parts: [
+        {
+          text: limitar(mensagem.conteudo, 3000),
+        },
+      ],
     }));
 }
 
 function construirInstrucoes({ contacto, produtos }) {
   const nomeEmpresa =
-    process.env.BLUI_BUSINESS_NAME ||
-    'BLUI';
+    process.env.BLUI_BUSINESS_NAME || 'BLUI';
 
   return `
 És o agente comercial de ${nomeEmpresa}.
@@ -117,36 +125,53 @@ Não coloques "Resposta:" antes da mensagem.
 `;
 }
 
-async function chamarIA({ instrucoes, historico, texto }) {
-  const apiKey = limparTexto(process.env.OPENAI_API_KEY);
+async function chamarGemini({
+  instrucoes,
+  historico,
+  texto,
+}) {
+  const apiKey = limparTexto(process.env.GEMINI_API_KEY);
 
   if (!apiKey) {
-    throw new Error('OPENAI_API_KEY não configurada.');
+    throw new Error('GEMINI_API_KEY não configurada.');
   }
 
-  const input = [
-    {
-      role: 'developer',
-      content: instrucoes,
-    },
+  const contents = [
     ...historico,
     {
       role: 'user',
-      content: limitar(texto, 5000),
+      parts: [
+        {
+          text: limitar(texto, 5000),
+        },
+      ],
     },
   ];
 
-  const response = await fetch(OPENAI_URL, {
+  const url =
+    `${GEMINI_URL}/${encodeURIComponent(GEMINI_MODEL)}:generateContent` +
+    `?key=${encodeURIComponent(apiKey)}`;
+
+  const response = await fetch(url, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${apiKey}`,
     },
     body: JSON.stringify({
-      model: DEFAULT_MODEL,
-      input,
-      max_output_tokens: 500,
-      temperature: 0.7,
+      systemInstruction: {
+        parts: [
+          {
+            text: instrucoes,
+          },
+        ],
+      },
+
+      contents,
+
+      generationConfig: {
+        temperature: 0.7,
+        maxOutputTokens: 500,
+      },
     }),
   });
 
@@ -154,26 +179,34 @@ async function chamarIA({ instrucoes, historico, texto }) {
 
   if (!response.ok) {
     throw new Error(
-      `OpenAI HTTP ${response.status}: ${body.slice(0, 1000)}`
+      `Gemini HTTP ${response.status}: ${body.slice(0, 1000)}`
     );
   }
 
-  const json = JSON.parse(body);
+  let json;
 
-  const resposta =
-    json.output_text ||
-    json.output
-      ?.flatMap((item) => item.content || [])
-      ?.filter((item) => item.type === 'output_text')
-      ?.map((item) => item.text)
-      ?.join('\n') ||
-    '';
-
-  if (!resposta.trim()) {
-    throw new Error('A IA não devolveu texto.');
+  try {
+    json = JSON.parse(body);
+  } catch {
+    throw new Error('Resposta inválida da API Gemini.');
   }
 
-  return resposta.trim();
+  const resposta =
+    json.candidates
+      ?.flatMap((candidate) => candidate.content?.parts || [])
+      ?.map((part) => part.text || '')
+      ?.join('\n')
+      ?.trim() || '';
+
+  if (!resposta) {
+    const motivo =
+      json.candidates?.[0]?.finishReason ||
+      'resposta vazia';
+
+    throw new Error(`Gemini não devolveu texto: ${motivo}`);
+  }
+
+  return resposta;
 }
 
 function respostaFallback({ texto, produtos }) {
@@ -186,7 +219,10 @@ function respostaFallback({ texto, produtos }) {
   const textoLower = texto.toLowerCase();
 
   if (/pre[cç]o|quanto custa|valor/.test(textoLower)) {
-    if (produto.preco !== null && produto.preco !== undefined) {
+    if (
+      produto.preco !== null &&
+      produto.preco !== undefined
+    ) {
       return `Claro. O ${produto.nome} custa ${produto.preco}. Queres saber como funciona?`;
     }
 
@@ -199,11 +235,16 @@ function respostaFallback({ texto, produtos }) {
       : `Posso verificar a entrega do ${produto.nome}. Em que cidade estás?`;
   }
 
-  return produto.script_abertura ||
-    `Olá! Obrigado pela tua mensagem. Como posso ajudar-te com ${produto.nome}?`;
+  return (
+    produto.script_abertura ||
+    `Olá! Obrigado pela tua mensagem. Como posso ajudar-te com ${produto.nome}?`
+  );
 }
 
-export async function responderMensagem({ contacto, texto }) {
+export async function responderMensagem({
+  contacto,
+  texto,
+}) {
   const userId = contacto?.user_id;
 
   if (!userId) {
@@ -223,11 +264,12 @@ export async function responderMensagem({ contacto, texto }) {
     userId,
     produtos: produtos.length,
     historico: historico.length,
-    model: DEFAULT_MODEL,
+    provider: 'google-gemini',
+    model: GEMINI_MODEL,
   });
 
   try {
-    const resposta = await chamarIA({
+    const resposta = await chamarGemini({
       instrucoes,
       historico,
       texto,
@@ -235,6 +277,8 @@ export async function responderMensagem({ contacto, texto }) {
 
     console.log('[Agente IA OK]', {
       contactoId: contacto.id,
+      provider: 'google-gemini',
+      model: GEMINI_MODEL,
       chars: resposta.length,
     });
 
