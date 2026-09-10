@@ -46,6 +46,42 @@ function normalizeWhatsApp(value) {
     : `whatsapp:${clean}`;
 }
 
+async function sendSMS({ to, body, from }) {
+  const config = getConfig();
+  const sender = from || config.smsFrom;
+
+  if (!sender) {
+    throw new Error('Remetente SMS não configurado.');
+  }
+
+  if (!to) {
+    throw new Error('to é obrigatório.');
+  }
+
+  if (!body) {
+    throw new Error('body é obrigatório.');
+  }
+
+  console.log('[Twilio SMS outbound]', {
+    to,
+    from: sender,
+  });
+
+  const result = await getClient().messages.create({
+    to: String(to).trim(),
+    from: String(sender).trim(),
+    body: String(body),
+  });
+
+  console.log('[Twilio SMS outbound OK]', {
+    sid: result.sid,
+    status: result.status,
+    errorCode: result.errorCode || null,
+  });
+
+  return result;
+}
+
 async function sendWhatsApp({
   to,
   body,
@@ -124,6 +160,7 @@ async function sendWhatsApp({
 export {
   getConfig,
   getClient,
+  sendSMS,
   sendWhatsApp,
   normalizeWhatsApp,
 };
