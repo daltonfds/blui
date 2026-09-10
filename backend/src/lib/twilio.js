@@ -151,17 +151,69 @@ async function sendWhatsApp({
     customerServiceWindow,
   });
 
-  const result =
-    await getClient().messages.create(message);
+  try {
+    const result =
+      await getClient().messages.create(message);
 
-  console.log('[Twilio outbound OK]', {
-    sid: result.sid,
-    status: result.status,
-    errorCode: result.errorCode || null,
-    mode: message.contentSid ? 'template' : 'free-form',
-  });
+    console.log('[Twilio outbound OK]', {
+      sid: result.sid,
+      status: result.status,
+      errorCode: result.errorCode || null,
+      mode: message.contentSid ? 'template' : 'free-form',
+    });
 
-  return result;
+    return result;
+  } catch (error) {
+    console.error('[Twilio outbound ERROR]', {
+      status: error?.status || null,
+      code: error?.code || null,
+      message: error?.message || null,
+      mode: message.contentSid ? 'template' : 'free-form',
+    });
+
+    if (
+      customerServiceWindow &&
+      !message.contentSid &&
+      Number(error?.code) === 21654 &&
+      templateSid
+    ) {
+      console.warn(
+        '[Twilio fallback] ContentSid obrigatório. Tentando template configurado.'
+      );
+
+      const fallbackMessage = {
+        from: message.from,
+        to: message.to,
+        contentSid: templateSid,
+      };
+
+      const variables =
+        contentVariables ??
+        config.whatsappContentVariables;
+
+      if (variables) {
+        fallbackMessage.contentVariables =
+          typeof variables === 'string'
+            ? variables
+            : JSON.stringify(variables);
+      }
+
+      const fallback =
+        await getClient().messages.create(fallbackMessage);
+
+      console.log('[Twilio fallback OK]', {
+        sid: fallback.sid,
+        status: fallback.status,
+        errorCode: fallback.errorCode || null,
+        mode: 'template-fallback',
+        contentSid: templateSid,
+      });
+
+      return fallback;
+    }
+
+    throw error;
+  }
 }
 
 export {
