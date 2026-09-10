@@ -22,21 +22,58 @@ function LogoBlui({ tamanho = 40, escuro = false }) {
   );
 }
 
-const OPORTUNIDADES = [
-  { titulo: 'Lead quente sem resposta há 3h', acao: 'Alerta enviado', estado: 'Ativo' },
-  { titulo: 'Carrinho parado há 40 min', acao: 'Oferta de recuperação', estado: 'Ativo' },
-  { titulo: 'Cliente antigo, 32 dias sem comprar', acao: 'Remarketing agendado', estado: 'Ativo' },
-  { titulo: 'Pergunta que o agente não sabe responder', acao: 'Encaminhado a humano', estado: 'Resolvido' },
-];
+// --- Ícones monoline, sem emoji ---
+const iconProps = { width: 22, height: 22, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.6, strokeLinecap: 'round', strokeLinejoin: 'round' };
+
+const IconInbox = () => (<svg {...iconProps}><path d="M3 12h4l2 3h6l2-3h4" /><path d="M5 12 3 5h18l-2 7" /><path d="M3 12v6a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1v-6" /></svg>);
+const IconMemoria = () => (<svg {...iconProps}><circle cx="12" cy="12" r="3.2" /><path d="M12 4v2.5M12 17.5V20M4 12h2.5M17.5 12H20M6.3 6.3l1.8 1.8M15.9 15.9l1.8 1.8M6.3 17.7l1.8-1.8M15.9 8.1l1.8-1.8" /></svg>);
+const IconCiclo = () => (<svg {...iconProps}><path d="M4 12a8 8 0 0 1 13.5-5.8M20 12a8 8 0 0 1-13.5 5.8" /><path d="M17.5 3v3.5H14M6.5 21v-3.5H10" /></svg>);
+const IconMegafone = () => (<svg {...iconProps}><path d="M3 10v4a1 1 0 0 0 1 1h2l7 4V5L6 9H4a1 1 0 0 0-1 1Z" /><path d="M17 9a4 4 0 0 1 0 6M20 6a8 8 0 0 1 0 12" /></svg>);
+const IconGrafico = () => (<svg {...iconProps}><path d="M4 20V10M10 20V4M16 20v-7M22 20H2" /></svg>);
+const IconFecho = () => (<svg {...iconProps}><path d="M9 12.5 11 15l4.5-5.5" /><circle cx="12" cy="12" r="9.5" /></svg>);
+const IconRelogio = () => (<svg {...iconProps}><circle cx="12" cy="12" r="9.5" /><path d="M12 7v5.5l3.5 2" /></svg>);
 
 const FUNCIONALIDADES = [
-  { icon: '💬', titulo: 'Um único inbox para tudo', desc: 'WhatsApp, Messenger e Instagram na mesma conversa — nenhum lead se perde entre apps.' },
-  { icon: '🧠', titulo: 'Agente que nunca esquece', desc: 'Memória por contacto. O teu cliente nunca tem de repetir o que já disse.' },
-  { icon: '🔁', titulo: 'Recupera quem foge', desc: 'Follow-up automático às 24h, e um novo ciclo aos 7 dias — sem ninguém ter de lembrar.' },
-  { icon: '📣', titulo: 'Anúncios com os teus dados', desc: 'Cria campanhas no Facebook Ads a partir do que já sabes sobre quem compra de ti.' },
-  { icon: '📊', titulo: 'Vê onde estás a perder dinheiro', desc: 'Funil, conversão e receita por produto, canal e campanha — em tempo real, não no fim do mês.' },
-  { icon: '✅', titulo: 'Do "olá" ao "pago"', desc: 'A conversa não termina na venda — a BLUI confirma, regista e segue para o próximo cliente.' },
+  { Icon: IconInbox, titulo: 'Um canal, três frentes', desc: 'WhatsApp, Messenger e Instagram geridos como uma única operação de vendas.' },
+  { Icon: IconMemoria, titulo: 'Memória por contacto', desc: 'Cada conversa continua exatamente de onde parou — sem repetir, sem perder contexto.' },
+  { Icon: IconCiclo, titulo: 'Remarketing por produto', desc: 'Ciclos automáticos de recuperação: 24 horas, depois 7 dias, sem intervenção manual.' },
+  { Icon: IconMegafone, titulo: 'Campanhas no Facebook Ads', desc: 'Segmentação construída a partir dos teus próprios dados de conversão.' },
+  { Icon: IconGrafico, titulo: 'Métricas que mandam', desc: 'Funil, conversão e receita por canal e produto — a decisão deixa de ser instinto.' },
+  { Icon: IconFecho, titulo: 'Do primeiro contacto ao pago', desc: 'A BLUI acompanha a venda até ao fim e regista tudo, automaticamente.' },
 ];
+
+function GraficoHero() {
+  // Curva ilustrativa (crescimento de conversão ao longo do funil de recuperação)
+  const pontos = [8, 14, 12, 22, 19, 30, 27, 38, 44];
+  const max = Math.max(...pontos);
+  const largura = 520, altura = 180, passo = largura / (pontos.length - 1);
+  const coordenadas = pontos.map((v, i) => [i * passo, altura - (v / max) * (altura - 20) - 10]);
+  const linha = coordenadas.map(([x, y], i) => `${i === 0 ? 'M' : 'L'}${x},${y}`).join(' ');
+  const area = `${linha} L${largura},${altura} L0,${altura} Z`;
+
+  return (
+    <svg viewBox={`0 0 ${largura} ${altura}`} className="w-full h-auto">
+      <defs>
+        <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="#22B8FF" stopOpacity="0.35" />
+          <stop offset="1" stopColor="#22B8FF" stopOpacity="0" />
+        </linearGradient>
+        <linearGradient id="lineGrad" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0" stopColor="#22B8FF" />
+          <stop offset="1" stopColor="#7C3AED" />
+        </linearGradient>
+      </defs>
+      {[0.25, 0.5, 0.75].map((f) => (
+        <line key={f} x1="0" x2={largura} y1={altura * f} y2={altura * f} stroke="white" strokeOpacity="0.06" />
+      ))}
+      <path d={area} fill="url(#areaGrad)" />
+      <path d={linha} fill="none" stroke="url(#lineGrad)" strokeWidth="2.5" strokeLinecap="round" />
+      {coordenadas.map(([x, y], i) => (
+        <circle key={i} cx={x} cy={y} r={i === coordenadas.length - 1 ? 4.5 : 2.5} fill={i === coordenadas.length - 1 ? '#22B8FF' : 'white'} fillOpacity={i === coordenadas.length - 1 ? 1 : 0.6} />
+      ))}
+    </svg>
+  );
+}
 
 export default function Landing() {
   return (
@@ -51,148 +88,77 @@ export default function Landing() {
         </div>
       </header>
 
-      {/* HERO */}
-      <section className="max-w-6xl mx-auto px-6 pt-10 pb-20 grid lg:grid-cols-2 gap-12 items-center">
-        <div>
-          <span className="inline-block text-xs font-semibold tracking-wide text-brand-600 bg-brand-50 px-3 py-1 rounded-xs mb-5">
-            VENDAS + AUTOMAÇÃO + REMARKETING
-          </span>
-          <h1 className="text-4xl sm:text-5xl font-bold text-base-ink tracking-tight leading-tight">
-            Tens leads.<br />
-            <span className="text-brand-600">Estás só a deixá-los ir embora.</span>
-          </h1>
-          <p className="mt-6 text-lg text-base-ink/60 max-w-lg">
-            A BLUI atende no WhatsApp, Messenger e Instagram, lembra-se de cada conversa, corre atrás de quem
-            desaparece e fecha a venda — enquanto tu fazes o resto do negócio.
-          </p>
-          <div className="mt-8 flex flex-wrap items-center gap-4">
-            <Link to="/registar" className="bg-brand-500 text-base-white font-medium px-7 py-3 rounded-xs hover:bg-brand-600 transition-colors">
-              Quero parar de perder vendas →
-            </Link>
-            <Link to="/entrar" className="text-sm font-medium text-base-ink/70 hover:text-base-ink transition-colors">
-              Já tenho conta
-            </Link>
+      {/* HERO escuro, com gráfico */}
+      <section className="bg-base-ink">
+        <div className="max-w-6xl mx-auto px-6 pt-16 pb-16 grid lg:grid-cols-2 gap-14 items-center">
+          <div>
+            <span className="inline-block text-xs font-semibold tracking-widest text-brand-400 uppercase mb-5">
+              Vendas · Automação · Inteligência de dados
+            </span>
+            <h1 className="text-4xl sm:text-5xl font-bold text-base-white tracking-tight leading-[1.1]">
+              O teu concorrente não está a perder o cliente que tu acabaste de perder.
+            </h1>
+            <p className="mt-6 text-lg text-base-white/55 max-w-lg">
+              A BLUI atende no WhatsApp, Messenger e Instagram, aprende com cada conversa e recupera
+              automaticamente quem ia desistir de comprar.
+            </p>
+            <div className="mt-9 flex flex-wrap items-center gap-4">
+              <Link to="/registar" className="bg-brand-500 text-base-white font-medium px-7 py-3 rounded-xs hover:bg-brand-600 transition-colors">
+                Criar conta
+              </Link>
+              <Link to="/entrar" className="text-sm font-medium text-base-white/60 hover:text-base-white transition-colors">
+                Já tenho conta
+              </Link>
+            </div>
           </div>
-          <p className="mt-4 text-xs text-base-ink/40">Para negócios e empreendedores de qualquer país. Começa por R$5.</p>
-        </div>
 
-        <div className="bg-base-white border border-black/5 rounded-xs shadow-xl p-6">
-          <div className="flex justify-between items-center mb-4">
-            <p className="text-xs font-medium text-base-ink/50">MOTOR DE VENDAS · Oportunidades recuperadas</p>
-            <span className="text-xs font-semibold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-xs">exemplo ilustrativo</span>
-          </div>
-          <div className="divide-y divide-black/5">
-            {OPORTUNIDADES.map((o) => (
-              <div key={o.titulo} className="py-3 flex justify-between items-center">
-                <div>
-                  <p className="text-sm text-base-ink">{o.titulo}</p>
-                  <p className="text-xs text-base-ink/40">{o.acao}</p>
-                </div>
-                <span className={`text-xs font-medium px-2 py-1 rounded-xs ${o.estado === 'Ativo' ? 'bg-brand-50 text-brand-600' : 'bg-base-fog text-base-ink/50'}`}>
-                  {o.estado}
-                </span>
-              </div>
-            ))}
-          </div>
-          <div className="mt-4 bg-base-ink text-base-white text-xs font-medium px-4 py-2.5 rounded-xs inline-block">
-            🕐 24/7 a trabalhar nas tuas oportunidades
+          <div className="bg-white/5 border border-white/10 rounded-xs p-6 backdrop-blur">
+            <p className="text-xs font-medium text-base-white/40 mb-4">RECUPERAÇÃO DE OPORTUNIDADES · TENDÊNCIA</p>
+            <GraficoHero />
+            <div className="mt-4 flex justify-between text-xs text-base-white/40">
+              <span>Início do ciclo</span>
+              <span>Follow-up 24h</span>
+              <span>Follow-up 7 dias</span>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* VERDADE INCÓMODA */}
-      <section className="bg-base-ink py-16">
-        <div className="max-w-4xl mx-auto px-6 text-center">
-          <p className="text-xs font-semibold tracking-wide text-brand-400 mb-3">A VERDADE SOBRE VENDAS</p>
-          <h2 className="text-2xl sm:text-3xl font-bold text-base-white leading-snug">
-            A maioria dos negócios não precisa de mais leads.<br />Precisa de parar de desperdiçar os que já tem.
+      {/* AFIRMAÇÃO CENTRAL */}
+      <section className="border-b border-black/5">
+        <div className="max-w-4xl mx-auto px-6 py-16 text-center">
+          <p className="text-xs font-semibold tracking-widest text-brand-600 uppercase mb-3">A verdade sobre vendas</p>
+          <h2 className="text-2xl sm:text-3xl font-bold text-base-ink leading-snug">
+            Não precisas de mais leads. Precisas de parar de deixar os que já tens ir embora.
           </h2>
-          <p className="mt-4 text-base-white/50 max-w-2xl mx-auto">
-            Cada conversa ignorada, cada follow-up esquecido e cada cliente que nunca mais voltou é dinheiro que
-            já esteve nas tuas mãos.
-          </p>
         </div>
       </section>
 
       {/* FUNCIONALIDADES */}
       <section className="max-w-6xl mx-auto px-6 py-20">
-        <p className="text-xs font-semibold tracking-wide text-brand-600 mb-2">O TEU NOVO SISTEMA DE VENDAS</p>
-        <h2 className="text-3xl font-bold text-base-ink mb-3">Não deixes dinheiro na mesa.</h2>
-        <p className="text-base-ink/60 max-w-2xl mb-10">
-          A BLUI junta contactos, conversas, automações, remarketing, campanhas e análise num único lugar.
-        </p>
+        <p className="text-xs font-semibold tracking-widest text-brand-600 uppercase mb-2">O sistema</p>
+        <h2 className="text-3xl font-bold text-base-ink mb-10">Tudo o que uma operação de vendas séria precisa.</h2>
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {FUNCIONALIDADES.map((f) => (
-            <div key={f.titulo} className="bg-base-fog rounded-xs p-6">
-              <div className="text-2xl mb-3">{f.icon}</div>
-              <h3 className="font-semibold text-base-ink mb-1.5">{f.titulo}</h3>
-              <p className="text-sm text-base-ink/60">{f.desc}</p>
+          {FUNCIONALIDADES.map(({ Icon, titulo, desc }) => (
+            <div key={titulo} className="border border-black/5 rounded-xs p-6 hover:border-brand-500/40 transition-colors">
+              <div className="w-10 h-10 rounded-xs bg-brand-50 text-brand-600 flex items-center justify-center mb-4">
+                <Icon />
+              </div>
+              <h3 className="font-semibold text-base-ink mb-1.5">{titulo}</h3>
+              <p className="text-sm text-base-ink/60">{desc}</p>
             </div>
           ))}
         </div>
       </section>
 
-      {/* PARA QUEM É */}
-      <section className="max-w-6xl mx-auto px-6 py-20 grid lg:grid-cols-2 gap-10 items-start">
-        <div>
-          <p className="text-xs font-semibold tracking-wide text-brand-600 mb-2">HIGH-TICKET · PERFORMANCE · VENDAS DIRETAS</p>
-          <h2 className="text-2xl sm:text-3xl font-bold text-base-ink leading-snug mb-4">
-            Se o teu negócio depende de conversas para vender, a BLUI foi feita para ti.
-          </h2>
-          <p className="text-base-ink/60">
-            Infoprodutores, agências, e-commerce, serviços, afiliados, criadores e negócios locais usam a BLUI
-            para nunca mais perder um cliente por falta de follow-up.
-          </p>
-        </div>
-        <ul className="space-y-4">
-          {[
-            'Nunca mais depender da memória de alguém para fazer follow-up',
-            'Recuperar leads que já estavam praticamente perdidos',
-            'Separar quem compra, quem está interessado e quem só está a curiosear',
-            'Criar campanhas de remarketing com os teus próprios dados',
-            'Vender em qualquer país, qualquer moeda, qualquer mercado',
-          ].map((item) => (
-            <li key={item} className="flex items-start gap-3">
-              <span className="text-brand-500 font-bold mt-0.5">✓</span>
-              <span className="text-sm text-base-ink/80">{item}</span>
-            </li>
-          ))}
-        </ul>
-      </section>
-
-      {/* CTA FORTE */}
-      <section className="bg-brand-500 py-16">
+      {/* CTA final */}
+      <section className="bg-base-ink py-20">
         <div className="max-w-3xl mx-auto px-6 text-center">
-          <p className="text-xs font-semibold tracking-wide text-brand-100 mb-3">A DECISÃO É SIMPLES</p>
           <h2 className="text-2xl sm:text-3xl font-bold text-base-white leading-snug">
-            Continua a perder clientes.<br />Ou começa a fechar vendas com a BLUI.
+            Continua a perder clientes em silêncio.<br />Ou instala o sistema que os recupera por ti.
           </h2>
-          <p className="mt-4 text-brand-50/80">
-            Cria a tua conta e transforma o teu processo comercial num sistema que não depende de sorte,
-            memória ou improviso.
-          </p>
-          <Link
-            to="/registar"
-            className="mt-8 inline-block bg-base-white text-brand-600 font-semibold px-7 py-3 rounded-xs hover:bg-base-fog transition-colors"
-          >
-            Começar agora →
-          </Link>
-        </div>
-      </section>
-
-      {/* GLOBAL */}
-      <section className="max-w-6xl mx-auto px-6 py-16">
-        <div className="bg-base-fog rounded-xs p-8 flex flex-col sm:flex-row items-center justify-between gap-6">
-          <div>
-            <p className="text-xs font-semibold tracking-wide text-brand-600 mb-2">BLUI GLOBAL</p>
-            <h3 className="text-xl font-bold text-base-ink mb-2">Um sistema. Qualquer país. Qualquer mercado.</h3>
-            <p className="text-sm text-base-ink/60 max-w-md">
-              A BLUI não é uma plataforma limitada a um país. Opera internacionalmente e vende em qualquer
-              moeda, qualquer idioma, qualquer fuso horário.
-            </p>
-          </div>
-          <Link to="/registar" className="bg-base-ink text-base-white text-sm font-medium px-6 py-3 rounded-xs hover:bg-black transition-colors shrink-0">
-            Criar conta →
+          <Link to="/registar" className="mt-8 inline-block bg-brand-500 text-base-white font-semibold px-7 py-3 rounded-xs hover:bg-brand-600 transition-colors">
+            Criar conta agora
           </Link>
         </div>
       </section>
