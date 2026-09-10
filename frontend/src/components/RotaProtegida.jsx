@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
-import { supabase } from '../lib/supabaseClient.js';
+import { api } from '../lib/api.js';
 
 export default function RotaProtegida({
   children,
@@ -35,54 +35,8 @@ export default function RotaProtegida({
       setMotivoBloqueio(null);
 
       try {
-        // Administrador nunca fica bloqueado pela assinatura.
-        const { data: admin, error: erroAdmin } =
-          await supabase.rpc('is_admin');
-
-        if (erroAdmin) {
-          console.warn(
-            'Não foi possível verificar admin:',
-            erroAdmin.message
-          );
-        }
-
-        if (admin === true) {
-          if (!cancelado) {
-            setAcessoLiberado(true);
-            setVerificando(false);
-          }
-          return;
-        }
-
-        // Consulta direta da assinatura do utilizador autenticado.
-        const { data: assinatura, error } = await supabase
-          .from('assinaturas')
-          .select(`
-            id,
-            estado,
-            ciclo_inicio,
-            ciclo_fim,
-            mensagens_usadas,
-            criado_em,
-            atualizado_em,
-            planos (
-              id,
-              nome,
-              preco_brl,
-              mensagens_incluidas,
-              dias_validade,
-              ativo
-            )
-          `)
-          .eq('user_id', sessao.user.id)
-          .in('estado', ['ativa', 'pendente'])
-          .order('criado_em', { ascending: false })
-          .limit(1)
-          .maybeSingle();
-
-        if (error) {
-          throw error;
-        }
+        // A assinatura é validada pelo backend autenticado.
+        const assinatura = await api.get('/api/assinaturas/minha');
 
         if (!assinatura) {
           if (!cancelado) {
@@ -97,9 +51,6 @@ export default function RotaProtegida({
         }
 
         const agora = new Date();
-        const inicio = assinatura.ciclo_inicio
-          ? new Date(assinatura.ciclo_inicio)
-          : null;
         const fim = assinatura.ciclo_fim
           ? new Date(assinatura.ciclo_fim)
           : null;
@@ -109,11 +60,7 @@ export default function RotaProtegida({
           !Number.isNaN(fim.getTime()) &&
           fim.getTime() > agora.getTime();
 
-        const estadoAtivo = assinatura.estado === 'ativa';
-
-        // Se a assinatura está ativa mas não tem ciclo_fim,
-        // consideramos erro de configuração e bloqueamos por segurança.
-        if (!estadoAtivo) {
+        if (assinatura.estado !== 'ativa') {
           if (!cancelado) {
             setMotivoBloqueio({
               tipo: 'pendente',
@@ -139,11 +86,11 @@ export default function RotaProtegida({
           return;
         }
 
-        // Assinatura ativa + ciclo válido = acesso.
         if (!cancelado) {
           setAcessoLiberado(true);
           setMotivoBloqueio(null);
         }
+
       } catch (erro) {
         console.error('Erro ao verificar assinatura:', erro);
 
