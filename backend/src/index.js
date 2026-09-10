@@ -20,41 +20,67 @@ import categoriasRoutes from './routes/categorias.js';
 import assinaturasRoutes from './routes/assinaturas.js';
 import adminRoutes from './routes/admin.js';
 import funilRoutes from './routes/funil.js';
-import { verificarAssinatura } from './middleware/assinatura.js';
 
 dotenv.config();
 
 const app = express();
 
-app.use(cors({ origin: process.env.FRONTEND_URL || '*' }));
+app.use(
+  cors({
+    origin: process.env.FRONTEND_URL || '*',
+  })
+);
+
 app.use(express.json());
 
 app.get('/', (req, res) => {
-  res.json({ ok: true, servico: 'Blui API' });
+  res.json({
+    ok: true,
+    servico: 'Blui API',
+    modo: 'desenvolvimento',
+    assinatura_obrigatoria: false,
+  });
 });
 
-app.use('/api/contactos', verificarAssinatura, contactosRoutes);
-app.use('/api/produtos', verificarAssinatura, produtosRoutes);
-app.use('/api/campanhas', verificarAssinatura, campanhasRoutes);
-app.use('/api/tracking', verificarAssinatura, trackingRoutes);
-app.use('/api/sugestoes', verificarAssinatura, sugestoesRoutes);
-app.use('/api/conversas', verificarAssinatura, conversasRoutes);
-app.use('/api/loja', verificarAssinatura, lojaRoutes);
-app.use('/api/analytics', verificarAssinatura, analyticsRoutes);
-app.use('/api/automacoes', verificarAssinatura, automacoesRoutes);
-app.use('/api/sites', verificarAssinatura, sitesRoutes);
-app.use('/api/categorias', verificarAssinatura, categoriasRoutes);
-app.use('/api/funil', verificarAssinatura, funilRoutes);
+// Áreas principais.
+// IMPORTANTE:
+// A assinatura NÃO bloqueia estas rotas durante o desenvolvimento.
+// A autenticação própria de cada rota continua responsável pelo acesso.
+app.use('/api/contactos', contactosRoutes);
+app.use('/api/produtos', produtosRoutes);
+app.use('/api/campanhas', campanhasRoutes);
+app.use('/api/tracking', trackingRoutes);
+app.use('/api/sugestoes', sugestoesRoutes);
+app.use('/api/conversas', conversasRoutes);
+app.use('/api/loja', lojaRoutes);
+app.use('/api/analytics', analyticsRoutes);
+app.use('/api/automacoes', automacoesRoutes);
+app.use('/api/sites', sitesRoutes);
+app.use('/api/categorias', categoriasRoutes);
+app.use('/api/funil', funilRoutes);
 
+// Suporte
 app.use('/api/suporte', suporteRoutes);
+
+// Assinaturas continuam disponíveis para desenvolvimento,
+// testes e futura reativação do sistema comercial.
 app.use('/api/assinaturas', assinaturasRoutes);
+
+// Integrações
 app.use('/api/twilio', twilioRoutes);
+
+// Administração
 app.use('/api/admin', adminRoutes);
+
+// Webhooks
 app.use('/webhooks', webhooksRoutes);
 
 const PORT = process.env.PORT || 4000;
 
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Blui API a correr na porta ${PORT}`);
+  console.log('🔓 Modo desenvolvimento: assinatura não obrigatória');
+  console.log('🔐 Autenticação continua obrigatória nas áreas protegidas');
+
   iniciarScheduler();
 });
