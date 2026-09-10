@@ -98,9 +98,9 @@ const grupos = [
     itens: [
       { to: '/conversas', label: 'Todas', Icon: IconPeople },
       { to: '/conversas/whatsapp', label: 'WhatsApp', Icon: IconPeople },
-      { to: '/conversas/instagram', label: 'Instagram', Icon: IconPeople },
+      { to: '/conversas/instagram', label: 'Instagram', Icon: IconLayers },
       { to: '/conversas/messenger', label: 'Messenger', Icon: IconPeople },
-      { to: '/conversas/site', label: 'Site', Icon: IconPeople },
+      { to: '/conversas/site', label: 'Site', Icon: IconGrid },
     ],
   },
   {
