@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { NavLink, useNavigate } from 'react-router-dom';
+import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 import { supabase } from '../lib/supabaseClient.js';
 import Wordmark from './Wordmark.jsx';
@@ -201,6 +201,8 @@ export default function Sidebar() {
   const { sair } = useAuth();
   const navigate = useNavigate();
   const [ehAdmin, setEhAdmin] = useState(false);
+  const location = useLocation();
+  const [abertos, setAbertos] = useState(() => new Set());
   const [idioma, setIdioma] = useState(() => {
     const salvo = localStorage.getItem('blui-language');
     return salvo === 'en' ? 'en' : 'pt';
@@ -234,52 +236,49 @@ export default function Sidebar() {
         <Wordmark />
       </div>
 
-      <nav className="flex-1 space-y-5">
-        {grupos.map((grupo) => (
-          <section key={traduzir(grupo.titulo, idioma)}>
-            <div className="px-3 mb-1.5 text-[10px] font-bold tracking-[0.14em] text-base-ink/40">
-              {traduzir(grupo.titulo, idioma)}
-            </div>
-
-            <div className="space-y-0.5">
-              {grupo.itens.map((item) => (
-                <Item
-                  key={item.to}
-                  {...item}
-                  label={traduzir(item.label, idioma)}
-                />
-              ))}
-            </div>
-          </section>
-        ))}
-
+      <nav className="flex-1 space-y-3">
+        {grupos.map((grupo) => {
+          const ativo = grupo.itens.some((item) =>
+            location.pathname === item.to ||
+            (item.to !== '/painel' && item.to !== '/contactos' && item.to !== '/conversas' &&
+             item.to !== '/produtos' && item.to !== '/loja' && item.to !== '/sites' &&
+             item.to !== '/campanhas' && item.to !== '/automacoes' && item.to !== '/definicoes' &&
+             location.pathname.startsWith(item.to + '/'))
+          );
+          const aberto = abertos.has(grupo.titulo) || ativo;
+          return (
+            <section key={grupo.titulo}>
+              <button
+                type="button"
+                onClick={() => setAbertos(prev => {
+                  const n = new Set(prev);
+                  n.has(grupo.titulo) ? n.delete(grupo.titulo) : n.add(grupo.titulo);
+                  return n;
+                })}
+                className="w-full flex items-center justify-between px-3 mb-1.5 text-left text-[10px] font-bold tracking-[0.14em] text-base-ink/40 hover:text-base-ink"
+              >
+                <span>{traduzir(grupo.titulo, idioma)}</span>
+                <span className={`transition-transform ${aberto ? 'rotate-180' : ''}`}>⌄</span>
+              </button>
+              {aberto && (
+                <div className="space-y-0.5">
+                  {grupo.itens.map((item) => (
+                    <Item key={item.to} {...item} label={traduzir(item.label, idioma)} />
+                  ))}
+                </div>
+              )}
+            </section>
+          );
+        })}
         <section>
           <div className="px-3 mb-1.5 text-[10px] font-bold tracking-[0.14em] text-base-ink/40">
             {traduzir('CONTA', idioma)}
           </div>
-
-          <Item
-            to="/assinatura"
-            label={traduzir("Assinatura", idioma)}
-            Icon={IconSettings}
-          />
-
-          <Item
-            to="/suporte"
-            label={traduzir("Suporte", idioma)}
-            Icon={IconPeople}
-          />
-
-          {ehAdmin && (
-            <Item
-              to="/admin"
-              label={traduzir("Admin", idioma)}
-              Icon={IconBolt}
-            />
-          )}
+          <Item to="/assinatura" label={traduzir("Assinatura", idioma)} Icon={IconSettings} />
+          <Item to="/suporte" label={traduzir("Suporte", idioma)} Icon={IconPeople} />
+          {ehAdmin && <Item to="/admin" label={traduzir("Admin", idioma)} Icon={IconBolt} />}
         </section>
       </nav>
-
 
       <div className="px-3 py-3 border-t border-black/5">
         <div className="mb-2 text-[10px] font-bold tracking-[0.14em] text-base-ink/40">
