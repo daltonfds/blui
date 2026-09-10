@@ -62,6 +62,7 @@ export default function Funil() {
   const [funilId, setFunilId] = useState(null);
   const [etapas, setEtapas] = useState([]);
   const [nomeFunil, setNomeFunil] = useState('Funil de Vendas');
+  const [editandoNome, setEditandoNome] = useState(false);
   const [objetivoFunil, setObjetivoFunil] = useState('');
   const [selecionada, setSelecionada] = useState(null);
   const [modo, setModo] = useState('funil');
@@ -396,7 +397,7 @@ export default function Funil() {
           </div>
           <div className="rounded-2xl border border-slate-200 bg-white p-4">
             <div className="text-xs font-semibold uppercase tracking-wide text-slate-400">Etapas com conhecimento</div>
-            <div className="mt-1 text-2xl font-bold text-slate-900">{resumo.conhecimento}/{totalEtapas}</div>
+            <div className="mt-1 text-2xl font-bold text-slate-900">{resumo.conhecimento}/{resumo.etapas}</div>
           </div>
         </div>
 
