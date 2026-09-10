@@ -321,6 +321,7 @@ router.post(
           to: origem,
           body: resposta,
           from: connection.twilio_from,
+          customerServiceWindow: true,
         });
       }
     } catch (error) {

@@ -89,6 +89,7 @@ async function sendWhatsApp({
   from,
   contentSid,
   contentVariables,
+  customerServiceWindow = false,
 }) {
   const config = getConfig();
 
@@ -112,7 +113,10 @@ async function sendWhatsApp({
     to: normalizeWhatsApp(to),
   };
 
-  if (templateSid) {
+  const useTemplate =
+    Boolean(templateSid) && !customerServiceWindow;
+
+  if (useTemplate) {
     message.contentSid = templateSid;
 
     const variables =
@@ -142,7 +146,9 @@ async function sendWhatsApp({
   console.log('[Twilio outbound]', {
     to: message.to,
     from: message.from,
+    mode: message.contentSid ? 'template' : 'free-form',
     contentSid: message.contentSid || null,
+    customerServiceWindow,
   });
 
   const result =
@@ -152,6 +158,7 @@ async function sendWhatsApp({
     sid: result.sid,
     status: result.status,
     errorCode: result.errorCode || null,
+    mode: message.contentSid ? 'template' : 'free-form',
   });
 
   return result;
