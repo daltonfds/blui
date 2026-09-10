@@ -19,6 +19,7 @@ import sitesRoutes from './routes/sites.js';
 import categoriasRoutes from './routes/categorias.js';
 import assinaturasRoutes from './routes/assinaturas.js';
 import adminRoutes from './routes/admin.js';
+import funilRoutes from './routes/funil.js';
 import { verificarAssinatura } from './middleware/assinatura.js';
 
 dotenv.config();
@@ -43,6 +44,7 @@ app.use('/api/analytics', verificarAssinatura, analyticsRoutes);
 app.use('/api/automacoes', verificarAssinatura, automacoesRoutes);
 app.use('/api/sites', verificarAssinatura, sitesRoutes);
 app.use('/api/categorias', verificarAssinatura, categoriasRoutes);
+app.use('/api/funil', verificarAssinatura, funilRoutes);
 
 app.use('/api/suporte', suporteRoutes);
 app.use('/api/assinaturas', assinaturasRoutes);

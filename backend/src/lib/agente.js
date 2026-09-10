@@ -76,7 +76,117 @@ async function carregarHistorico(contactoId) {
     }));
 }
 
-function construirInstrucoes({ contacto, produtos }) {
+
+async function carregarFunil(userId, contactoId) {
+  const { data: funis, error } = await supabase
+    .from('funnels')
+    .select('id,nome,objetivo,ativo,funnel_stages(*)')
+    .eq('user_id', userId)
+    .eq('ativo', true)
+    .order('criado_em', { ascending: false })
+    .limit(1);
+
+  if (error || !funis?.length) return null;
+
+  const funil = {
+    ...funis[0],
+    funnel_stages: (funis[0].funnel_stages || []).sort((a,b) => a.ordem - b.ordem),
+  };
+
+  let { data: estado } = await supabase
+    .from('contact_funnel_stage')
+    .select('*')
+    .eq('contacto_id', contactoId)
+    .eq('funnel_id', funil.id)
+    .maybeSingle();
+
+  if (!estado && funil.funnel_stages.length) {
+    const primeira = funil.funnel_stages[0];
+    const { data: novo } = await supabase
+      .from('contact_funnel_stage')
+      .insert({
+        contacto_id: contactoId,
+        funnel_id: funil.id,
+        stage_id: primeira.id,
+        user_id: userId,
+      })
+      .select('*')
+      .single();
+    estado = novo;
+  }
+
+  const etapa = funil.funnel_stages.find(x => x.id === estado?.stage_id) || funil.funnel_stages[0];
+  return etapa ? { funil, etapa } : null;
+}
+
+function blocoFunil(funilData) {
+  if (!funilData) return '';
+  const { funil, etapa } = funilData;
+  return `
+FUNIL COMERCIAL:
+Nome: ${funil.nome}
+Objetivo: ${funil.objetivo || 'não definido'}
+Etapa atual: ${etapa.nome}
+Descrição: ${etapa.descricao || 'não definida'}
+Objetivo desta etapa: ${etapa.objetivo || 'não definido'}
+Conhecimento desta etapa: ${etapa.conhecimento || 'não definido'}
+Perguntas que podes fazer: ${JSON.stringify(etapa.perguntas || [])}
+Condição de avanço: ${etapa.condicao || 'não definida'}
+Próxima ação: ${etapa.acao || 'não definida'}
+
+REGRAS DO FUNIL:
+- Usa a etapa atual como contexto comercial.
+- Faz apenas perguntas relevantes para a etapa atual.
+- Quando a condição de avanço estiver claramente cumprida, avança o contacto para a próxima etapa.
+- Nunca inventes uma condição que não esteja definida.
+- Não reveles a estrutura interna do funil ao cliente.
+`;
+}
+
+async function avançarFunilPorSinais({ userId, contactoId, texto }) {
+  const dados = await carregarFunil(userId, contactoId);
+  if (!dados) return null;
+
+  const { funil, etapa } = dados;
+  const index = funil.funnel_stages.findIndex(x => x.id === etapa.id);
+  if (index < 0 || index >= funil.funnel_stages.length - 1) return etapa;
+
+  const t = String(texto || '').toLowerCase();
+  const sinais = /comprar|quero comprar|vou comprar|pagar|pagamento|enviar proposta|aceito|pode enviar|vamos avançar|quero avançar|interessado|tenho interesse/.test(t);
+  const preco = /preço|preco|quanto custa|valor|custa|orçamento|orcamento/.test(t);
+
+  if (!sinais && !preco) return etapa;
+
+  const proxima = funil.funnel_stages[index + 1];
+
+  const { data: atualizada, error } = await supabase
+    .from('contact_funnel_stage')
+    .upsert({
+      contacto_id: contactoId,
+      funnel_id: funil.id,
+      stage_id: proxima.id,
+      user_id: userId,
+      atualizado_em: new Date().toISOString(),
+    }, { onConflict: 'contacto_id,funnel_id' })
+    .select('*')
+    .single();
+
+  if (error) {
+    console.error('[Funil avanço]', error);
+    return etapa;
+  }
+
+  console.log('[Funil avanço]', {
+    contactoId,
+    de: etapa.nome,
+    para: proxima.nome,
+    atribuicao: atualizada?.id,
+  });
+
+  return proxima;
+}
+
+function construirInstrucoes({ contacto, produtos, funilData }) {
   const nomeEmpresa =
     process.env.BLUI_BUSINESS_NAME || 'BLUI';
 
@@ -108,6 +218,7 @@ REGRAS:
 - Quando o cliente demonstrar intenção de compra, conduz para recolher os dados necessários.
 - Não forces uma venda quando o cliente apenas quer informação.
 
+${blocoFunil(funilData)}
 DADOS DO CLIENTE:
 Nome: ${contacto?.nome || 'não informado'}
 Número: ${contacto?.numero || 'não informado'}
@@ -253,10 +364,12 @@ export async function responderMensagem({
 
   const produtos = await carregarProdutos(userId);
   const historico = await carregarHistorico(contacto.id);
+  const funilData = await carregarFunil(userId, contacto.id);
 
   const instrucoes = construirInstrucoes({
     contacto,
     produtos,
+    funilData,
   });
 
   console.log('[Agente IA]', {
