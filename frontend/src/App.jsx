@@ -4,6 +4,7 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import Landing from './pages/Landing.jsx';
 import Autenticacao from './pages/Autenticacao.jsx';
 import Painel from './pages/Painel.jsx';
+import Funil from './pages/Funil.jsx';
 import Contactos from './pages/Contactos.jsx';
 import Produtos from './pages/Produtos.jsx';
 import Campanhas from './pages/Campanhas.jsx';
@@ -47,7 +48,7 @@ export default function App() {
 
       {/* PAINEL */}
       <Route path="/painel" element={<Protegida><Painel /></Protegida>} />
-      <Route path="/painel/funil" element={<Protegida><Painel /></Protegida>} />
+      <Route path="/painel/funil" element={<Protegida><Funil /></Protegida>} />
       <Route path="/painel/receita" element={<Protegida><Painel /></Protegida>} />
       <Route path="/painel/oportunidades" element={<Protegida><Painel /></Protegida>} />
       <Route path="/analytics" element={<Protegida><Analytics /></Protegida>} />
