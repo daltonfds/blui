@@ -20,6 +20,12 @@ import categoriasRoutes from './routes/categorias.js';
 import assinaturasRoutes from './routes/assinaturas.js';
 import adminRoutes from './routes/admin.js';
 import funilRoutes from './routes/funil.js';
+import inteligenciaRoutes from './routes/inteligencia.js';
+import analisesRoutes from './routes/analises.js';
+import fornecedoresRoutes from './routes/fornecedores.js';
+import notificacoesRoutes from './routes/notificacoes.js';
+import aiRoutes from './routes/ai.js';
+
 
 dotenv.config();
 
@@ -58,6 +64,12 @@ app.use('/api/automacoes', automacoesRoutes);
 app.use('/api/sites', sitesRoutes);
 app.use('/api/categorias', categoriasRoutes);
 app.use('/api/funil', funilRoutes);
+app.use('/api/inteligencia', inteligenciaRoutes);
+app.use('/api/analises', analisesRoutes);
+app.use('/api/fornecedores', fornecedoresRoutes);
+app.use('/api/notificacoes', notificacoesRoutes);
+app.use('/api/ai', aiRoutes);
+
 
 // Suporte
 app.use('/api/suporte', suporteRoutes);
