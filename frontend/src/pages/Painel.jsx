@@ -1,88 +1,112 @@
-import React, { useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
+import { useEffect, useState } from 'react';
 import LayoutApp from '../components/LayoutApp.jsx';
 import { api } from '../lib/api.js';
-import { IconPeople, IconClock, IconCheck, IconChat } from '../components/Icons.jsx';
 
-const CARTOES = [
-  { chave: 'novo', label: 'Novos', Icon: IconChat, cor: 'text-base-ink' },
-  { chave: 'conversando', label: 'Em conversa', Icon: IconChat, cor: 'text-base-ink' },
-  { chave: 'pendente', label: 'Pendentes', Icon: IconClock, cor: 'text-signal-red' },
-  { chave: 'comprou', label: 'Compraram', Icon: IconCheck, cor: 'text-brand-600' },
+const estados = [
+  ['comprou', 'Comprou'],
+  ['pendente', 'Pendente'],
+  ['nao_respondeu', 'Não respondeu'],
+  ['follow_up', 'Follow-up'],
 ];
 
 export default function Painel() {
   const [resumo, setResumo] = useState(null);
-  const [sugestoes, setSugestoes] = useState(null);
+  const [objecoes, setObjecoes] = useState([]);
+  const [erro, setErro] = useState('');
+
+  async function carregar() {
+    try {
+      const [r, o] = await Promise.all([
+        api.get('/api/contactos/resumo'),
+        api.get('/api/analises/objecoes').catch(() => ({ objecoes: [] })),
+      ]);
+      setResumo(r);
+      setObjecoes(o.objecoes || []);
+    } catch (e) {
+      setErro(e.message);
+    }
+  }
 
   useEffect(() => {
-    api.get('/api/contactos/resumo').then(setResumo).catch(() => {});
-    api.get('/api/sugestoes').then(setSugestoes).catch(() => {});
+    carregar();
   }, []);
+
+  const followUp =
+    (resumo?.resumo?.follow_up || 0) +
+    (resumo?.resumo?.novo || 0) +
+    (resumo?.resumo?.conversando || 0);
 
   return (
     <LayoutApp>
-      <div className="flex items-center justify-between mb-8">
-        <div>
+      <div className="max-w-6xl">
+        <header className="mb-8">
           <h1 className="text-2xl font-semibold text-base-ink">Painel</h1>
-          <p className="text-sm text-base-ink/55 mt-1">Visão geral dos teus contactos e conversas.</p>
-        </div>
-        <div className="flex items-center gap-2 text-sm bg-base-white border border-black/5 rounded-xs px-4 py-2">
-          <IconPeople className="text-base-ink/40" />
-          <span className="text-base-ink/60">Total</span>
-          <span className="font-semibold text-base-ink">{resumo?.total ?? '—'}</span>
-        </div>
-      </div>
-
-      <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {CARTOES.map(({ chave, label, Icon, cor }, i) => (
-          <motion.div
-            key={chave}
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.35, delay: i * 0.05 }}
-            className="bg-base-white border border-black/5 rounded-xs p-5"
-          >
-            <div className={`w-8 h-8 rounded-xs bg-base-fog flex items-center justify-center ${cor}`}>
-              <Icon />
-            </div>
-            <p className="mt-4 text-2xl font-semibold text-base-ink">
-              {resumo?.resumo?.[chave] ?? 0}
-            </p>
-            <p className="text-sm text-base-ink/55 mt-0.5">{label}</p>
-          </motion.div>
-        ))}
-      </div>
-
-      <div className="mt-8 bg-base-white border border-black/5 rounded-xs p-6">
-        <h2 className="font-medium text-base-ink">Sugestões de melhoria</h2>
-        {sugestoes && !sugestoes.liberado && (
-          <div className="mt-4">
-            <div className="h-2 bg-base-fog rounded-full overflow-hidden">
-              <div
-                className="h-full bg-brand-500 transition-all"
-                style={{ width: `${Math.min(100, (sugestoes.contactos_atual / sugestoes.contactos_necessarios) * 100)}%` }}
-              />
-            </div>
-            <p className="text-sm text-base-ink/55 mt-3">{sugestoes.mensagem}</p>
-          </div>
-        )}
-        {sugestoes?.liberado && sugestoes.sugestoes.length === 0 && (
-          <p className="text-sm text-base-ink/55 mt-3">
-            Já tens contactos suficientes — as sugestões vão aparecer aqui assim que houver padrões relevantes.
+          <p className="mt-1 text-sm text-base-ink/55">
+            CRM das conversas do WhatsApp e acompanhamento das vendas.
           </p>
-        )}
-        {sugestoes?.liberado && sugestoes.sugestoes.length > 0 && (
-          <ul className="mt-4 space-y-3">
-            {sugestoes.sugestoes.map((s) => (
-              <li key={s.id} className="border border-black/5 rounded-xs p-4">
-                <p className="text-sm font-medium text-base-ink">{s.titulo}</p>
-                <p className="text-sm text-base-ink/55 mt-1">{s.descricao}</p>
-              </li>
+        </header>
+
+        {erro && <p className="mb-5 text-sm text-red-600">{erro}</p>}
+
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+          <Card label="Total de conversas" value={resumo?.total ?? 0} />
+          <Card label="Comprou" value={resumo?.resumo?.comprou ?? 0} />
+          <Card label="Pendente" value={resumo?.resumo?.pendente ?? 0} />
+          <Card label="Não respondeu" value={resumo?.resumo?.nao_respondeu ?? 0} />
+          <Card label="Follow-up" value={followUp} />
+        </div>
+
+        <section className="mt-8 rounded-xs border border-black/5 bg-base-white p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="font-medium">Objeções dos clientes</h2>
+              <p className="mt-1 text-sm text-base-ink/50">
+                As 5 objeções mais frequentes nas conversas.
+              </p>
+            </div>
+            <span className="text-xs text-base-ink/40">
+              {resumo?.total ?? 0} conversas
+            </span>
+          </div>
+
+          <div className="mt-5 space-y-3">
+            {objecoes.slice(0, 5).map((item, index) => (
+              <div key={item.objecao} className="flex items-center gap-4 border-b border-black/5 pb-3">
+                <span className="w-6 text-sm text-base-ink/35">{index + 1}</span>
+                <span className="flex-1 text-sm">{item.objecao}</span>
+                <span className="text-sm font-medium">{item.total}</span>
+              </div>
             ))}
-          </ul>
-        )}
+
+            {!objecoes.length && (
+              <p className="text-sm text-base-ink/40">
+                Ainda não existem dados suficientes para identificar objeções.
+              </p>
+            )}
+          </div>
+        </section>
+
+        <section className="mt-5 rounded-xs border border-black/5 bg-base-white p-6">
+          <h2 className="font-medium">Estado do CRM</h2>
+          <div className="mt-4 grid gap-3 md:grid-cols-4">
+            {estados.map(([key, label]) => (
+              <div key={key} className="rounded-xs bg-base-fog p-4">
+                <p className="text-2xl font-semibold">{resumo?.resumo?.[key] ?? 0}</p>
+                <p className="mt-1 text-sm text-base-ink/50">{label}</p>
+              </div>
+            ))}
+          </div>
+        </section>
       </div>
     </LayoutApp>
+  );
+}
+
+function Card({ label, value }) {
+  return (
+    <div className="rounded-xs border border-black/5 bg-base-white p-5">
+      <p className="text-2xl font-semibold text-base-ink">{value}</p>
+      <p className="mt-1 text-sm text-base-ink/50">{label}</p>
+    </div>
   );
 }

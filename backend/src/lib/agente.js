@@ -186,7 +186,22 @@ async function avançarFunilPorSinais({ userId, contactoId, texto }) {
   return proxima;
 }
 
-function construirInstrucoes({ contacto, produtos, funilData }) {
+async function carregarConfiguracaoAgente(userId) {
+  const { data } = await supabase
+    .from('agent_settings')
+    .select('instrucoes,negociacao_ativa,desconto_maximo,frete_gratis')
+    .eq('user_id', userId)
+    .maybeSingle();
+
+  return data || {
+    instrucoes: '',
+    negociacao_ativa: false,
+    desconto_maximo: 0,
+    frete_gratis: false,
+  };
+}
+
+function construirInstrucoes({ contacto, produtos, funilData, configuracao }) {
   const nomeEmpresa =
     process.env.BLUI_BUSINESS_NAME || 'BLUI';
 
@@ -217,6 +232,22 @@ REGRAS:
 - Não prometas uma ação que o sistema não pode executar.
 - Quando o cliente demonstrar intenção de compra, conduz para recolher os dados necessários.
 - Não forces uma venda quando o cliente apenas quer informação.
+- Usa sempre o produto correto identificado na conversa ou no contacto.
+- Nunca mistures preço, entrega ou condições de produtos diferentes.
+- Se houver mais de um produto possível, pergunta qual produto o cliente quer antes de informar o preço.
+- O preço deve ser retirado exclusivamente do produto correspondente.
+- Se o cliente disser que está caro, só podes negociar se a configuração abaixo permitir.
+- Nunca ultrapasses o desconto máximo definido.
+- Se o desconto não for permitido, podes oferecer apenas uma alternativa explicitamente permitida, como frete grátis.
+- Nunca inventes uma promoção.
+
+CONFIGURAÇÃO DE NEGOCIAÇÃO:
+Ativa: ${Boolean(configuracao?.negociacao_ativa)}
+Desconto máximo: ${Number(configuracao?.desconto_maximo || 0)}%
+Frete grátis permitido: ${Boolean(configuracao?.frete_gratis)}
+
+INSTRUÇÕES DO DONO:
+${configuracao?.instrucoes || 'Nenhuma instrução adicional.'}
 
 ${blocoFunil(funilData)}
 DADOS DO CLIENTE:
@@ -365,11 +396,27 @@ export async function responderMensagem({
   const produtos = await carregarProdutos(userId);
   const historico = await carregarHistorico(contacto.id);
   const funilData = await carregarFunil(userId, contacto.id);
+  const configuracao = await carregarConfiguracaoAgente(userId);
+
+  const produtoDoContacto =
+    produtos.find(p => p.id === contacto.produto_id || p.id === contacto.produto_detectado_id);
+
+  const textoNormalizado = String(texto || '').toLowerCase();
+  const produtosMencionados = produtos.filter(p =>
+    p.nome && textoNormalizado.includes(String(p.nome).toLowerCase())
+  );
+
+  const contextoProdutos = produtoDoContacto
+    ? [produtoDoContacto]
+    : produtosMencionados.length === 1
+      ? produtosMencionados
+      : produtos;
 
   const instrucoes = construirInstrucoes({
     contacto,
-    produtos,
+    produtos: contextoProdutos,
     funilData,
+    configuracao,
   });
 
   console.log('[Agente IA]', {

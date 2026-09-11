@@ -2,67 +2,215 @@ import cron from 'node-cron';
 import { supabase } from '../config/supabase.js';
 import { enviarMensagemWhatsApp } from './whatsapp.js';
 
-const HORA_EM_MS = 60 * 60 * 1000;
+const PRIMEIRO_FOLLOWUP_HORAS = 22;
+const SEGUNDO_FOLLOWUP_DIAS = 7;
 
-export function iniciarScheduler() {
-  // Corre a cada 15 minutos
-  cron.schedule('*/15 * * * *', async () => {
-    await processarRemarketing24h();
-    await processarReinicioCiclo7dias();
-  });
+const MENSAGEM_22H =
+  'Olá. Ainda tens interesse? Posso ajudar-te a avançar com o teu pedido.';
 
-  console.log('⏱️  Scheduler de remarketing iniciado (verifica a cada 15 min).');
+const MENSAGEM_7D =
+  'Olá. Estou a fazer um último acompanhamento. Ainda precisas de ajuda?';
+
+function horasDesde(data) {
+  if (!data) return Infinity;
+
+  return (
+    (Date.now() - new Date(data).getTime()) /
+    (1000 * 60 * 60)
+  );
 }
 
-async function processarRemarketing24h() {
-  const limite24h = new Date(Date.now() - 24 * HORA_EM_MS).toISOString();
+function diasDesde(data) {
+  if (!data) return Infinity;
 
-  const { data: contactos } = await supabase
-    .from('contactos')
-    .select('*, produtos:produto_id(script_remarketing_24h, nome_produto)')
-    .in('estado', ['conversando', 'novo'])
-    .lte('ultima_interacao', limite24h)
-    .eq('tentativas_remarketing', 0);
+  return (
+    (Date.now() - new Date(data).getTime()) /
+    (1000 * 60 * 60 * 24)
+  );
+}
 
-  for (const contacto of contactos || []) {
-    const script = contacto.produtos?.script_remarketing_24h
-      || `Olá! Ainda tens interesse no ${contacto.produtos?.nome_produto || 'produto'}? Posso ajudar-te a finalizar o pedido. 😊`;
+async function obterConfiguracaoRemarketing(userId) {
+  try {
+    const { data, error } = await supabase
+      .from('automacoes')
+      .select('configuracao, ativo')
+      .eq('user_id', userId)
+      .eq('tipo', 'remarketing')
+      .eq('ativo', true)
+      .maybeSingle();
 
-    if (contacto.canal_origem === 'whatsapp') {
-      await enviarMensagemWhatsApp({ numero: contacto.numero, texto: script });
+    if (error) {
+      console.warn(
+        '[Scheduler] Não foi possível carregar configuração:',
+        error.message
+      );
+
+      return null;
     }
 
-    await supabase.from('mensagens').insert({
-      contacto_id: contacto.id,
-      remetente: 'agente',
-      conteudo: script,
-      canal: contacto.canal_origem,
-    });
+    return data;
+  } catch (error) {
+    console.warn(
+      '[Scheduler] Erro ao obter configuração:',
+      error.message
+    );
 
-    await supabase
-      .from('contactos')
-      .update({ estado: 'pendente', tentativas_remarketing: 1 })
-      .eq('id', contacto.id);
+    return null;
   }
 }
 
-async function processarReinicioCiclo7dias() {
-  const limite7dias = new Date(Date.now() - 7 * 24 * HORA_EM_MS).toISOString();
+async function processarContacto(contacto) {
+  const estado = String(contacto.estado || '').toLowerCase();
 
-  const { data: contactos } = await supabase
+  if (!contacto.numero) return;
+  if (estado === 'comprou') return;
+  if (contacto.blacklist) return;
+
+  const etapa = Number(contacto.remarketing_stage || 0);
+
+  const configuracao = await obterConfiguracaoRemarketing(
+    contacto.user_id
+  );
+
+  const config = configuracao?.configuracao || {};
+
+  const mensagem22h =
+    config.mensagem_22h ||
+    config.mensagem_primeiro_followup ||
+    MENSAGEM_22H;
+
+  const mensagem7d =
+    config.mensagem_7d ||
+    config.mensagem_segundo_followup ||
+    MENSAGEM_7D;
+
+  let mensagem = null;
+  let novaEtapa = etapa;
+
+  /*
+   * ETAPA 0
+   * Primeiro follow-up 22 horas depois da última interação.
+   */
+  if (
+    etapa === 0 &&
+    contacto.ultima_interacao &&
+    horasDesde(contacto.ultima_interacao) >= PRIMEIRO_FOLLOWUP_HORAS
+  ) {
+    mensagem = mensagem22h;
+    novaEtapa = 1;
+  }
+
+  /*
+   * ETAPA 1
+   * Segundo follow-up 7 dias depois do primeiro remarketing.
+   */
+  if (
+    etapa === 1 &&
+    contacto.ultimo_remarketing_em &&
+    diasDesde(contacto.ultimo_remarketing_em) >= SEGUNDO_FOLLOWUP_DIAS
+  ) {
+    mensagem = mensagem7d;
+    novaEtapa = 2;
+  }
+
+  if (!mensagem) return;
+
+  const resultado = await enviarMensagemWhatsApp(
+    contacto.numero,
+    mensagem
+  );
+
+  if (!resultado?.sucesso) {
+    console.error(
+      `[Scheduler] Falha ao enviar para ${contacto.numero}:`,
+      resultado?.erro || 'erro desconhecido'
+    );
+
+    return;
+  }
+
+  const agora = new Date().toISOString();
+
+  const { error: updateError } = await supabase
     .from('contactos')
-    .select('*')
-    .eq('estado', 'pendente')
-    .lte('ultima_interacao', limite7dias);
+    .update({
+      estado: 'follow-up',
+      remarketing_stage: novaEtapa,
+      ultimo_remarketing_em: agora,
+      tentativas_remarketing:
+        Number(contacto.tentativas_remarketing || 0) + 1
+    })
+    .eq('id', contacto.id);
 
-  for (const contacto of contactos || []) {
-    await supabase
+  if (updateError) {
+    console.error(
+      `[Scheduler] Mensagem enviada mas falhou atualização do contacto ${contacto.id}:`,
+      updateError.message
+    );
+
+    return;
+  }
+
+  console.log(
+    `[Scheduler] Follow-up ${novaEtapa} enviado para ${contacto.numero}`
+  );
+}
+
+async function processarRemarketing() {
+  try {
+    const { data: contactos, error } = await supabase
       .from('contactos')
-      .update({
-        estado: 'novo',
-        tentativas_remarketing: 0,
-        ciclo_reiniciado_em: new Date().toISOString(),
-      })
-      .eq('id', contacto.id);
+      .select(
+        'id,user_id,numero,estado,ultima_interacao,ultimo_remarketing_em,tentativas_remarketing,remarketing_stage,blacklist'
+      )
+      .neq('estado', 'comprou')
+      .eq('blacklist', false)
+      .in('remarketing_stage', [0, 1]);
+
+    if (error) {
+      console.error(
+        '[Scheduler] Erro ao carregar contactos:',
+        error.message
+      );
+
+      return;
+    }
+
+    if (!contactos?.length) {
+      console.log('[Scheduler] Nenhum contacto elegível para remarketing.');
+      return;
+    }
+
+    console.log(
+      `[Scheduler] A verificar ${contactos.length} contacto(s).`
+    );
+
+    for (const contacto of contactos) {
+      try {
+        await processarContacto(contacto);
+      } catch (error) {
+        console.error(
+          `[Scheduler] Erro no contacto ${contacto.numero}:`,
+          error.message
+        );
+      }
+    }
+  } catch (error) {
+    console.error(
+      '[Scheduler] Erro geral:',
+      error.message
+    );
   }
 }
+
+export function iniciarScheduler() {
+  cron.schedule('*/15 * * * *', async () => {
+    await processarRemarketing();
+  });
+
+  console.log(
+    'Scheduler de remarketing iniciado. Primeiro follow-up: 22h. Segundo follow-up: 7 dias.'
+  );
+}
+
+export { processarRemarketing };
