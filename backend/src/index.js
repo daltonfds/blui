@@ -31,9 +31,28 @@ dotenv.config();
 
 const app = express();
 
+const origensPermitidas = (process.env.FRONTEND_URL || '')
+  .split(',')
+  .map((origem) => origem.trim())
+  .filter(Boolean);
+
+const origensPadrao = [
+  'https://blui.online',
+  'https://www.blui.online',
+  'https://blui-rust.vercel.app',
+];
+
+const origens = [...new Set([...origensPadrao, ...origensPermitidas])];
+
 app.use(
   cors({
-    origin: process.env.FRONTEND_URL || '*',
+    origin: (origin, callback) => {
+      if (!origin || origens.includes(origin)) {
+        return callback(null, true);
+      }
+
+      return callback(new Error(`Origem não permitida pelo CORS: ${origin}`));
+    },
   })
 );
 
