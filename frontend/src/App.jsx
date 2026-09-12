@@ -29,7 +29,7 @@ export default function App() {
   return (
     <Routes>
       {/* Página comercial pública */}
-      <Route path="/" element={<Landing />} />
+      <Route path="/" element={<Vendas />} />
       <Route path="/vendas" element={<Vendas />} />
 
       {/* Página anterior mantida */}
