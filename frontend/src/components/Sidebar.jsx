@@ -22,7 +22,7 @@ const itens = [
   { to: '/numeros', label: 'Números', Icon: IconLayers },
 ];
 
-export default function Sidebar() {
+export default function Sidebar({ open = false, onClose = () => {} }) {
   const { sair } = useAuth();
   const navigate = useNavigate();
   const [admin, setAdmin] = useState(false);
@@ -38,10 +38,21 @@ export default function Sidebar() {
   async function terminarSessao() {
     await sair();
     navigate('/entrar');
+    onClose();
   }
 
   return (
-    <aside className="hidden md:flex md:flex-col w-64 shrink-0 border-r border-black/5 bg-base-white px-3 py-5">
+    <>
+      {open && (
+        <button
+          type="button"
+          aria-label="Fechar menu"
+          onClick={onClose}
+          className="fixed inset-0 z-40 bg-black/20"
+        />
+      )}
+
+      <aside className={`fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-black/5 bg-base-white px-3 py-5 shadow-xl transition-transform duration-200 ease-out ${open ? "translate-x-0" : "-translate-x-full"}`}>
       <div className="px-3 mb-7">
         <Wordmark />
         <p className="mt-2 text-xs text-base-ink/40">Versão 0.5</p>
@@ -73,6 +84,7 @@ export default function Sidebar() {
 
           <NavLink
             to="/assinatura"
+            onClick={onClose}
             className="flex items-center gap-3 rounded-xs px-3 py-2.5 text-sm font-medium text-base-ink/65 hover:bg-base-fog"
           >
             <IconSettings />
@@ -81,6 +93,7 @@ export default function Sidebar() {
 
           <NavLink
             to="/suporte"
+            onClick={onClose}
             className="flex items-center gap-3 rounded-xs px-3 py-2.5 text-sm font-medium text-base-ink/65 hover:bg-base-fog"
           >
             <IconPeople />
@@ -90,6 +103,7 @@ export default function Sidebar() {
           {admin && (
             <NavLink
               to="/admin"
+              onClick={onClose}
               className="flex items-center gap-3 rounded-xs px-3 py-2.5 text-sm font-medium text-base-ink/65 hover:bg-base-fog"
             >
               <IconSettings />
@@ -106,6 +120,7 @@ export default function Sidebar() {
         <IconLogout />
         <span>Terminar sessão</span>
       </button>
-    </aside>
+      </aside>
+    </>
   );
 }
