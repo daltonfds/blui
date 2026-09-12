@@ -21,8 +21,8 @@ export default function Vendas() {
           </nav>
 
           <div className="nav-actions">
-            <a href="/login" className="login-link">Entrar</a>
-            <a href="/register" className="nav-button">Começar agora</a>
+            <a href="/entrar" className="login-link">Entrar</a>
+            <a href="/registar" className="nav-button">Começar agora</a>
           </div>
         </div>
       </header>
@@ -52,12 +52,12 @@ export default function Vendas() {
               </p>
 
               <div className="hero-actions">
-                <a href="/register" className="primary-button">
+                <a href="/registar" className="primary-button">
                   Ativar a BLUI
                   <span>Continuar</span>
                 </a>
 
-                <a href="/login" className="secondary-button">
+                <a href="/entrar" className="secondary-button">
                   Já tenho conta
                 </a>
               </div>
@@ -432,7 +432,7 @@ export default function Vendas() {
                 trazer o cliente de volta.
               </p>
 
-              <a href="/register" className="text-button">
+              <a href="/registar" className="text-button">
                 Criar minha operação
                 <span>Continuar</span>
               </a>
@@ -599,7 +599,7 @@ export default function Vendas() {
                   que os teus clientes chegam.
                 </p>
 
-                <a href="/register" className="primary-button full">
+                <a href="/registar" className="primary-button full">
                   Ativar a BLUI
                   <span>Continuar</span>
                 </a>
@@ -642,12 +642,12 @@ export default function Vendas() {
               </p>
 
               <div className="hero-actions centered-actions">
-                <a href="/register" className="white-button">
+                <a href="/registar" className="white-button">
                   Ativar a BLUI
                   <span>Continuar</span>
                 </a>
 
-                <a href="/login" className="outline-white-button">
+                <a href="/entrar" className="outline-white-button">
                   Já tenho conta
                 </a>
               </div>
@@ -678,8 +678,8 @@ export default function Vendas() {
 
           <div>
             <h4>Conta</h4>
-            <a href="/login">Entrar</a>
-            <a href="/register">Começar agora</a>
+            <a href="/entrar">Entrar</a>
+            <a href="/registar">Começar agora</a>
           </div>
 
           <div>

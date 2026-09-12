@@ -29,7 +29,8 @@ export default function App() {
   return (
     <Routes>
       {/* Página comercial pública */}
-      <Route path="/" element={<Vendas />} />
+      <Route path="/" element={<Landing />} />
+      <Route path="/vendas" element={<Vendas />} />
 
       {/* Página anterior mantida */}
       <Route path="/landing" element={<Landing />} />
