@@ -113,4 +113,48 @@ router.post('/loja-shopify', async (req, res) => {
   }
 });
 
+// Objeções mais frequentes dos contactos do utilizador autenticado
+router.get('/objecoes', async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('contactos')
+      .select('objeccao')
+      .eq('user_id', req.user.id)
+      .not('objeccao', 'is', null);
+
+    if (error) {
+      return res.status(500).json({ erro: error.message });
+    }
+
+    const contagem = {};
+
+    for (const contacto of data || []) {
+      const objecao = String(contacto.objeccao || '').trim();
+
+      if (!objecao) continue;
+
+      const chave = objecao.toLowerCase();
+
+      if (!contagem[chave]) {
+        contagem[chave] = {
+          objecao,
+          quantidade: 0,
+        };
+      }
+
+      contagem[chave].quantidade += 1;
+    }
+
+    const objecoes = Object.values(contagem)
+      .sort((a, b) => b.quantidade - a.quantidade)
+      .slice(0, 5);
+
+    res.json({ objecoes });
+  } catch (err) {
+    res.status(500).json({
+      erro: err.message || 'Erro ao analisar objeções.',
+    });
+  }
+});
+
 export default router;
