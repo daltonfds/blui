@@ -106,7 +106,7 @@ export default function Sites() {
     }
 
     try {
-      await api.delete(`/sites/${site.id}`)
+      await api.del(`/sites/${site.id}`)
 
       if (siteSelecionado?.id === site.id) {
         setSiteSelecionado(null)
@@ -201,7 +201,7 @@ export default function Sites() {
     }
 
     try {
-      await api.delete(
+      await api.del(
         `/sites/${siteSelecionado.id}/paginas/${pagina.id}`
       )
 

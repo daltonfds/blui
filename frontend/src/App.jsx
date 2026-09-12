@@ -7,6 +7,7 @@ import Contactos from './pages/Contactos.jsx';
 import Conversas from './pages/Conversas.jsx';
 import Funil from './pages/Funil.jsx';
 import Treino from './pages/Treino.jsx';
+import Produtos from './pages/Produtos.jsx';
 import Remarketing from './pages/Remarketing.jsx';
 import Numeros from './pages/Numeros.jsx';
 import Assinatura from './pages/Assinatura.jsx';
@@ -35,6 +36,7 @@ export default function App() {
       <Route path="/contactos" element={<Protegida><Contactos /></Protegida>} />
       <Route path="/funil" element={<Protegida><Funil /></Protegida>} />
       <Route path="/treino" element={<Protegida><Treino /></Protegida>} />
+      <Route path="/produtos" element={<Protegida><Produtos /></Protegida>} />
       <Route path="/remarketing" element={<Protegida><Remarketing /></Protegida>} />
       <Route path="/numeros" element={<Protegida><Numeros /></Protegida>} />
 

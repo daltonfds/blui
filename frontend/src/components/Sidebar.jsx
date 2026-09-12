@@ -19,6 +19,7 @@ const itens = [
   { to: '/remarketing', label: 'Remarketing', Icon: IconBolt },
   { to: '/funil', label: 'Funil', Icon: IconLayers },
   { to: '/treino', label: 'Treino do chatbot', Icon: IconSettings },
+  { to: '/produtos', label: 'Produtos', Icon: IconLayers },
   { to: '/numeros', label: 'Números', Icon: IconLayers },
 ];
 
