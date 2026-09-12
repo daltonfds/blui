@@ -29,23 +29,58 @@ router.put('/treino', async (req, res) => {
   const instrucoes = String(req.body?.instrucoes || '');
   const negociacao = req.body?.negociacao || {};
 
+  const desconto = Number(negociacao.desconto_maximo || 0);
+
   const payload = {
-    user_id: req.user.id,
     instrucoes,
     negociacao_ativa: Boolean(negociacao.ativa),
-    desconto_maximo: Math.max(0, Math.min(100, Number(negociacao.desconto_maximo || 0))),
+    desconto_maximo: Math.max(0, Math.min(100, Number.isFinite(desconto) ? desconto : 0)),
     frete_gratis: Boolean(negociacao.frete_gratis),
     atualizado_em: new Date().toISOString(),
   };
 
-  const { data, error } = await supabase
+  const { data: existente, error: erroBusca } = await supabase
     .from('agent_settings')
-    .upsert(payload, { onConflict: 'user_id' })
-    .select()
-    .single();
+    .select('user_id')
+    .eq('user_id', req.user.id)
+    .maybeSingle();
 
-  if (error) return res.status(500).json({ erro: error.message });
-  res.json({ ok: true, treino: data });
+  if (erroBusca) {
+    return res.status(500).json({ erro: erroBusca.message });
+  }
+
+  let data;
+  let error;
+
+  if (existente) {
+    ({ data, error } = await supabase
+      .from('agent_settings')
+      .update(payload)
+      .eq('user_id', req.user.id)
+      .select()
+      .single());
+  } else {
+    ({ data, error } = await supabase
+      .from('agent_settings')
+      .insert({
+        user_id: req.user.id,
+        ...payload,
+      })
+      .select()
+      .single());
+  }
+
+  if (error) {
+    return res.status(500).json({
+      erro: `Não foi possível guardar o comportamento geral: ${error.message}`,
+    });
+  }
+
+  return res.json({
+    ok: true,
+    mensagem: 'Comportamento geral guardado com sucesso.',
+    treino: data,
+  });
 });
 
 router.post('/melhorar-copy', async (req, res) => {
