@@ -170,7 +170,7 @@ export default function Assinatura() {
         ) : (
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
 
-            {planos.map((p, index) => (
+            {planos.filter((p) => p.nome !== 'Teste grátis').map((p, index) => (
               <div
                 key={p.id || index}
                 className={`bg-base-white border rounded-xs p-5 flex flex-col ${
@@ -239,10 +239,8 @@ export default function Assinatura() {
         )}
 
         <div className="mt-8 text-xs text-base-ink/45">
-          O plano Tester custa $1 e é válido por 7 dias.
-          Os restantes planos são válidos por 30 dias.
-          O acesso é automaticamente bloqueado quando a assinatura expira.
-          O plano Pro de $14 dá acesso total à BLUI.
+          O Teste grátis de 3 dias é atribuído automaticamente quando crias a conta.
+          Depois podes escolher o plano de teste de $1 ou a assinatura mensal de $9.
         </div>
 
       </div>
