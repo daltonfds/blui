@@ -4,10 +4,11 @@ function getConfig() {
   const accountSid = process.env.TWILIO_ACCOUNT_SID || '';
   const apiKeySid = process.env.TWILIO_API_KEY_SID || '';
   const apiKeySecret = process.env.TWILIO_API_KEY_SECRET || '';
+  const authToken = process.env.TWILIO_AUTH_TOKEN || '';
 
-  if (!accountSid || !apiKeySid || !apiKeySecret) {
+  if (!accountSid || (!authToken && (!apiKeySid || !apiKeySecret))) {
     throw new Error(
-      'Twilio não configurado: TWILIO_ACCOUNT_SID, TWILIO_API_KEY_SID e TWILIO_API_KEY_SECRET são obrigatórios.'
+      'Twilio não configurado: TWILIO_ACCOUNT_SID e credenciais Twilio são obrigatórios.'
     );
   }
 
@@ -15,6 +16,7 @@ function getConfig() {
     accountSid,
     apiKeySid,
     apiKeySecret,
+    authToken,
     smsFrom: process.env.TWILIO_SMS_FROM || '',
     whatsappFrom: process.env.TWILIO_WHATSAPP_FROM || '',
     whatsappContentSid:
@@ -24,15 +26,34 @@ function getConfig() {
   };
 }
 
-function getClient() {
+function getClient(credentials = {}) {
   const config = getConfig();
+
+  const accountSid =
+    credentials.accountSid || config.accountSid;
+
+  const authToken =
+    credentials.authToken || config.authToken;
+
+  if (
+    credentials.apiKeySid &&
+    credentials.apiKeySecret
+  ) {
+    return twilio(
+      credentials.apiKeySid,
+      credentials.apiKeySecret,
+      { accountSid }
+    );
+  }
+
+  if (authToken) {
+    return twilio(accountSid, authToken);
+  }
 
   return twilio(
     config.apiKeySid,
     config.apiKeySecret,
-    {
-      accountSid: config.accountSid,
-    }
+    { accountSid }
   );
 }
 
@@ -41,17 +62,28 @@ function normalizeWhatsApp(value) {
 
   const clean = String(value).trim();
 
-  return clean.toLowerCase().startsWith('whatsapp:')
+  return clean
+    .toLowerCase()
+    .startsWith('whatsapp:')
     ? clean
     : `whatsapp:${clean}`;
 }
 
-async function sendSMS({ to, body, from }) {
+async function sendSMS({
+  to,
+  body,
+  from,
+  credentials,
+}) {
   const config = getConfig();
-  const sender = from || config.smsFrom;
+
+  const sender =
+    from || config.smsFrom;
 
   if (!sender) {
-    throw new Error('Remetente SMS não configurado.');
+    throw new Error(
+      'Remetente SMS não configurado.'
+    );
   }
 
   if (!to) {
@@ -62,24 +94,11 @@ async function sendSMS({ to, body, from }) {
     throw new Error('body é obrigatório.');
   }
 
-  console.log('[Twilio SMS outbound]', {
-    to,
-    from: sender,
-  });
-
-  const result = await getClient().messages.create({
+  return getClient(credentials).messages.create({
     to: String(to).trim(),
     from: String(sender).trim(),
     body: String(body),
   });
-
-  console.log('[Twilio SMS outbound OK]', {
-    sid: result.sid,
-    status: result.status,
-    errorCode: result.errorCode || null,
-  });
-
-  return result;
 }
 
 async function sendWhatsApp({
@@ -90,13 +109,17 @@ async function sendWhatsApp({
   contentSid,
   contentVariables,
   customerServiceWindow = false,
+  credentials,
 }) {
   const config = getConfig();
 
-  const sender = from || config.whatsappFrom;
+  const sender =
+    from || config.whatsappFrom;
 
   if (!sender) {
-    throw new Error('Remetente WhatsApp não configurado.');
+    throw new Error(
+      'Remetente WhatsApp não configurado.'
+    );
   }
 
   if (!to) {
@@ -114,7 +137,8 @@ async function sendWhatsApp({
   };
 
   const useTemplate =
-    Boolean(templateSid) && !customerServiceWindow;
+    Boolean(templateSid) &&
+    !customerServiceWindow;
 
   if (useTemplate) {
     message.contentSid = templateSid;
@@ -143,77 +167,9 @@ async function sendWhatsApp({
     message.mediaUrl = [mediaUrl];
   }
 
-  console.log('[Twilio outbound]', {
-    to: message.to,
-    from: message.from,
-    mode: message.contentSid ? 'template' : 'free-form',
-    contentSid: message.contentSid || null,
-    customerServiceWindow,
-  });
-
-  try {
-    const result =
-      await getClient().messages.create(message);
-
-    console.log('[Twilio outbound OK]', {
-      sid: result.sid,
-      status: result.status,
-      errorCode: result.errorCode || null,
-      mode: message.contentSid ? 'template' : 'free-form',
-    });
-
-    return result;
-  } catch (error) {
-    console.error('[Twilio outbound ERROR]', {
-      status: error?.status || null,
-      code: error?.code || null,
-      message: error?.message || null,
-      mode: message.contentSid ? 'template' : 'free-form',
-    });
-
-    if (
-      customerServiceWindow &&
-      !message.contentSid &&
-      Number(error?.code) === 21654 &&
-      templateSid
-    ) {
-      console.warn(
-        '[Twilio fallback] ContentSid obrigatório. Tentando template configurado.'
-      );
-
-      const fallbackMessage = {
-        from: message.from,
-        to: message.to,
-        contentSid: templateSid,
-      };
-
-      const variables =
-        contentVariables ??
-        config.whatsappContentVariables;
-
-      if (variables) {
-        fallbackMessage.contentVariables =
-          typeof variables === 'string'
-            ? variables
-            : JSON.stringify(variables);
-      }
-
-      const fallback =
-        await getClient().messages.create(fallbackMessage);
-
-      console.log('[Twilio fallback OK]', {
-        sid: fallback.sid,
-        status: fallback.status,
-        errorCode: fallback.errorCode || null,
-        mode: 'template-fallback',
-        contentSid: templateSid,
-      });
-
-      return fallback;
-    }
-
-    throw error;
-  }
+  return getClient(credentials).messages.create(
+    message
+  );
 }
 
 export {
