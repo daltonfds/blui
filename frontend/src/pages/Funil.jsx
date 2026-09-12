@@ -59,7 +59,9 @@ function novoId() {
 }
 
 export default function Funil() {
-  const [funilId, setFunilId] = useState(null);
+  const [produtos, setProdutos] = useState([]);
+  const [produtoId, setProdutoId] = useState('');
+const [funilId, setFunilId] = useState(null);
   const [etapas, setEtapas] = useState([]);
   const [nomeFunil, setNomeFunil] = useState('Funil de Vendas');
   const [editandoNome, setEditandoNome] = useState(false);
@@ -126,6 +128,11 @@ export default function Funil() {
   };
 
   useEffect(() => {
+    api.get('/api/produtos')
+      .then((data) => setProdutos(data || []))
+      .catch(() => setProdutos([]));
+
+
     carregar();
   }, []);
 
