@@ -4,63 +4,41 @@ import { api } from '../lib/api.js';
 
 const PLANOS_FALLBACK = [
   {
-    id: '456a2e18-556e-44df-bfd8-25d118e7110e',
-    nome: 'Tester',
-    preco_brl: 1,
-    dias_validade: 7,
-    mensagens_incluidas: 100,
-    descricao: 'Plano Tester por 7 dias, com acesso restrito para experimentar a BLUI.',
+    id: 'free-trial',
+    nome: 'Teste grátis',
+    preco_brl: 0,
+    dias_validade: 3,
+    mensagens_incluidas: null,
+    descricao: '3 dias de teste grátis da BLUI.',
     funcionalidades: [
-      'Acesso básico à BLUI',
-      '7 dias de validade',
-      'Limites de teste',
+      '3 dias de acesso',
     ],
   },
   {
-    id: '7c6c2d74-9f6f-43c0-bb78-60319c76bf6d',
-    nome: 'Starter',
-    preco_brl: 5,
-    dias_validade: 30,
-    mensagens_incluidas: 1000,
-    descricao: 'Para começar a vender e organizar o teu negócio.',
+    id: '456a2e18-556e-44df-bfd8-25d118e7110e',
+    nome: 'Plano de teste de $1',
+    preco_brl: 1,
+    dias_validade: 7,
+    mensagens_incluidas: 20,
+    descricao: '7 dias de teste com 20 mensagens, 2 análises de fotos e 24h de remarketing.',
     funcionalidades: [
-      'Contactos',
-      'Produtos',
-      'Conversas',
-      '30 dias de validade',
+      '20 mensagens',
+      '2 análises de fotos',
+      '24h de remarketing',
     ],
   },
   {
     id: '4a66f961-300b-4249-926a-45b5414d365e',
-    nome: 'Growth',
+    nome: 'Plano de $9/mês',
     preco_brl: 9,
     dias_validade: 30,
-    mensagens_incluidas: 5000,
-    descricao: 'Automação e vendas para negócios em crescimento.',
+    mensagens_incluidas: null,
+    descricao: 'Assinatura mensal da BLUI por $9.',
     funcionalidades: [
-      'Tudo do Starter',
-      'Campanhas',
-      'Automações',
-      '30 dias de validade',
+      'Assinatura mensal',
     ],
   },
-  {
-    id: '0d47713e-c3b0-4213-85d2-445ffde4bfa6',
-    nome: 'Pro',
-    preco_brl: 14,
-    dias_validade: 30,
-    mensagens_incluidas: 20000,
-    descricao: 'Suite completa BLUI — acesso total por 30 dias.',
-    funcionalidades: [
-      'Acesso total',
-      'Analytics',
-      'Loja',
-      'Sites',
-      'Números',
-      'Suporte prioritário',
-    ],
-  },
-];
+]
 
 export default function Assinatura() {
   const [planos, setPlanos] = useState([]);
@@ -190,25 +168,25 @@ export default function Assinatura() {
             A carregar planos…
           </div>
         ) : (
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
 
             {planos.map((p, index) => (
               <div
                 key={p.id || index}
                 className={`bg-base-white border rounded-xs p-5 flex flex-col ${
-                  p.nome === 'Pro'
+                  p.nome === 'Plano de $9/mês'
                     ? 'border-brand-500 ring-1 ring-brand-500/20'
                     : 'border-black/5'
                 }`}
               >
 
-                {p.nome === 'Pro' && (
+                {p.nome === 'Plano de $9/mês' && (
                   <span className="text-[10px] uppercase tracking-wider font-semibold text-brand-600 mb-2">
                     Mais completo
                   </span>
                 )}
 
-                {p.nome === 'Tester' && (
+                {p.nome === 'Teste grátis' && (
                   <span className="text-[10px] uppercase tracking-wider font-semibold text-base-ink/45 mb-2">
                     Teste
                   </span>
