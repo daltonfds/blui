@@ -1,5 +1,6 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 
+import Vendas from './pages/Vendas.jsx';
 import Landing from './pages/Landing.jsx';
 import Autenticacao from './pages/Autenticacao.jsx';
 import Painel from './pages/Painel.jsx';
@@ -27,10 +28,17 @@ function Protegida({ children, ignorarAssinatura = false }) {
 export default function App() {
   return (
     <Routes>
-      <Route path="/" element={<Landing />} />
+      {/* Página comercial pública */}
+      <Route path="/" element={<Vendas />} />
+
+      {/* Página anterior mantida */}
+      <Route path="/landing" element={<Landing />} />
+
+      {/* Autenticação */}
       <Route path="/entrar" element={<Autenticacao abaInicial="entrar" />} />
       <Route path="/registar" element={<Autenticacao abaInicial="registar" />} />
 
+      {/* Área principal */}
       <Route path="/painel" element={<Protegida><Painel /></Protegida>} />
       <Route path="/conversas" element={<Protegida><Conversas /></Protegida>} />
       <Route path="/contactos" element={<Protegida><Contactos /></Protegida>} />
@@ -40,13 +48,40 @@ export default function App() {
       <Route path="/remarketing" element={<Protegida><Remarketing /></Protegida>} />
       <Route path="/numeros" element={<Protegida><Numeros /></Protegida>} />
 
+      {/* WhatsApp */}
       <Route path="/whatsapp" element={<Protegida><WhatsApp /></Protegida>} />
-      <Route path="/assinatura" element={<RotaProtegida ignorarAssinatura><Assinatura /></RotaProtegida>} />
-      <Route path="/suporte" element={<RotaProtegida ignorarAssinatura><Suporte /></RotaProtegida>} />
 
-      <Route path="/admin" element={<RotaProtegida ignorarAssinatura><Admin /></RotaProtegida>} />
+      {/* Conta / suporte */}
+      <Route
+        path="/assinatura"
+        element={
+          <RotaProtegida ignorarAssinatura>
+            <Assinatura />
+          </RotaProtegida>
+        }
+      />
 
-      <Route path="*" element={<Navigate to="/painel" replace />} />
+      <Route
+        path="/suporte"
+        element={
+          <RotaProtegida ignorarAssinatura>
+            <Suporte />
+          </RotaProtegida>
+        }
+      />
+
+      {/* Administração */}
+      <Route
+        path="/admin"
+        element={
+          <RotaProtegida ignorarAssinatura>
+            <Admin />
+          </RotaProtegida>
+        }
+      />
+
+      {/* Qualquer rota desconhecida */}
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
 }
