@@ -1,5 +1,4 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
 
 function BadgeLogo() {
   return (
@@ -44,10 +43,10 @@ export default function Landing() {
       <header className="max-w-5xl mx-auto flex items-center justify-between px-6 py-6">
         <BadgeLogo />
         <div className="flex items-center gap-3">
-          <Link to="/entrar" className="text-sm font-medium text-[#3a3a3a] hover:text-black transition-colors">Entrar</Link>
-          <Link to="/registar" className="bg-[#E8622C] text-white text-sm font-semibold px-5 py-2.5 rounded-full hover:bg-[#d1541f] transition-colors">
+          <a href="/entrar" className="text-sm font-medium text-[#3a3a3a] hover:text-black transition-colors">Entrar</a>
+          <a href="/registar" className="bg-[#E8622C] text-white text-sm font-semibold px-5 py-2.5 rounded-full hover:bg-[#d1541f] transition-colors">
             Começar agora
-          </Link>
+          </a>
         </div>
       </header>
 
@@ -69,11 +68,11 @@ export default function Landing() {
         </p>
 
         <div className="mt-9 flex flex-wrap items-center justify-center gap-5">
-          <Link to="/registar" className="bg-[#E8622C] text-white font-semibold px-8 py-3.5 rounded-full hover:bg-[#d1541f] transition-colors inline-flex items-center gap-2">
+          <a href="/registar" className="bg-[#E8622C] text-white font-semibold px-8 py-3.5 rounded-full hover:bg-[#d1541f] transition-colors inline-flex items-center gap-2">
             Ativar a BLUI
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M5 12h14M13 5l7 7-7 7" /></svg>
-          </Link>
-          <Link to="/entrar" className="text-sm font-medium text-[#5a5a5a] hover:text-black transition-colors">Já tenho conta</Link>
+          </a>
+          <a href="/entrar" className="text-sm font-medium text-[#5a5a5a] hover:text-black transition-colors">Já tenho conta</a>
         </div>
       </section>
 
@@ -151,10 +150,10 @@ export default function Landing() {
         <div className="rounded-3xl p-10" style={{ background: '#1A1A1A' }}>
           <h2 className="blui-font-display text-3xl font-bold text-white mb-3">Começa a recuperar vendas hoje.</h2>
           <p className="text-white/60 mb-7">Sem contratos longos. Começa a partir de R$5.</p>
-          <Link to="/registar" className="bg-[#E8622C] text-white font-semibold px-8 py-3.5 rounded-full hover:bg-[#d1541f] transition-colors inline-flex items-center gap-2">
+          <a href="/registar" className="bg-[#E8622C] text-white font-semibold px-8 py-3.5 rounded-full hover:bg-[#d1541f] transition-colors inline-flex items-center gap-2">
             Ativar a BLUI
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M5 12h14M13 5l7 7-7 7" /></svg>
-          </Link>
+          </a>
         </div>
       </section>
 

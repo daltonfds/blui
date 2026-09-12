@@ -1,0 +1,22 @@
+cat > preview/index.html <<'EOF'
+<!doctype html>
+<html lang="pt">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>blui — Preview</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module">
+      import React from "https://esm.sh/react@18";
+      import { createRoot } from "https://esm.sh/react-dom@18/client";
+      import LandingPage from "./src/LandingPage.jsx";
+
+      createRoot(document.getElementById("root")).render(
+        React.createElement(LandingPage)
+      );
+    </script>
+  </body>
+</html>
