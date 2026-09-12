@@ -248,6 +248,19 @@ export default function Funil() {
     setSelecionada(nova.id);
   };
 
+  const adicionarPergunta = () => {
+    if (!etapaAtual) return;
+
+    const perguntasAtuais = Array.isArray(etapaAtual.perguntas)
+      ? etapaAtual.perguntas
+      : [];
+
+    atualizarEtapa('perguntas', [
+      ...perguntasAtuais,
+      'Nova pergunta',
+    ]);
+  };
+
   const removerEtapa = async () => {
     if (!etapaAtual || etapas.length <= 1) return;
 
