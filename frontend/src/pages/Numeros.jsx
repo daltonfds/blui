@@ -2,9 +2,8 @@ import React, { useEffect, useState } from 'react';
 import LayoutApp from '../components/LayoutApp.jsx';
 import { supabase } from '../lib/supabaseClient.js';
 
-const SUPABASE_URL = 'https://qtyxuicwoqvktiqzqniw.supabase.co';
-const ANON_KEY =
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF0eXh1aWN3b3F2a3RpcXpxbml3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODkxMTkwNzcsImV4cCI6MjEwNDY5NTA3M30.MCTinzxQDsieUmWqLJn4prle1ADDClsMW4WYT88EDiQ';
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+const ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 const PAISES = [
   { valor: 'MZ', nome: 'Moçambique (+258)' },
