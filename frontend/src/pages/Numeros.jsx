@@ -1,9 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import LayoutApp from '../components/LayoutApp.jsx';
-import { supabase } from '../lib/supabaseClient.js';
-
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
-const ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
+import { api } from '../lib/api.js';
 
 const PAISES = [
   { valor: 'MZ', nome: 'Moçambique (+258)' },
@@ -16,24 +13,36 @@ const PAISES = [
 const MAX_IMAGENS = 100;
 const MAX_TAMANHO_MB = 10;
 
-async function chamarNumerosApi(action, { method = 'GET', body, isFormData, query = '' } = {}) {
-  const { data: { session } } = await supabase.auth.getSession();
-  const resposta = await fetch(
-    `${SUPABASE_URL}/functions/v1/numeros-api?action=${action}${query}`,
-    {
-      method,
-      headers: {
-        Authorization: `Bearer ${session?.access_token}`,
-        apikey: ANON_KEY,
-        ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
-      },
-      body: isFormData ? body : body ? JSON.stringify(body) : undefined,
-    }
-  );
-  const dados = await resposta.json();
-  if (!resposta.ok) throw new Error(dados.erro || 'Erro ao comunicar com o servidor.');
-  return dados;
+async function chamarNumerosApi(action, { method = 'GET', body, query = '' } = {}) {
+  if (action === 'listas') {
+    return api.get('/api/numeros');
+  }
+
+  if (action === 'lista') {
+    const params = new URLSearchParams(query.replace(/^&/, ''));
+    return api.get(`/api/numeros/lista/${encodeURIComponent(params.get('id'))}`);
+  }
+
+  if (action === 'manual') {
+    return api.post('/api/numeros/manual', body);
+  }
+
+  if (action === 'confirmar') {
+    return api.post('/api/numeros/confirmar', body);
+  }
+
+  if (action === 'imagem') {
+    return api.post('/api/numeros/imagem', body);
+  }
+
+  if (action === 'delete') {
+    const params = new URLSearchParams(query.replace(/^&/, ''));
+    return api.del(`/api/numeros/lista/${encodeURIComponent(params.get('id'))}`);
+  }
+
+  throw new Error(`Ação de números desconhecida: ${action}`);
 }
+
 
 export default function Numeros() {
   const [listas, setListas] = useState([]);
@@ -109,7 +118,7 @@ export default function Numeros() {
         const formData = new FormData();
         formData.append('imagem', validos[i]);
         formData.append('paisPadrao', paisPadrao);
-        const dados = await chamarNumerosApi('imagem', { method: 'POST', body: formData, isFormData: true });
+        const dados = await chamarNumerosApi('imagem', { method: 'POST', body: formData });
 
         for (const n of dados.numeros || []) {
           if (!vistos.has(n.numero)) {
@@ -160,7 +169,7 @@ export default function Numeros() {
   async function apagarLista(id) {
     if (!confirm('Apagar esta lista? Não podes desfazer.')) return;
     try {
-      await chamarNumerosApi('lista', { method: 'DELETE', query: `&id=${id}` });
+      await chamarNumerosApi('delete', { method: 'DELETE', query: `&id=${id}` });
       if (listaAberta === id) { setListaAberta(null); setConteudoListaAberta(null); }
       carregarListas();
     } catch (e) {
