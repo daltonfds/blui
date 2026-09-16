@@ -2467,3 +2467,272 @@ table tbody tr:hover td {
   }
 }
 
+
+/* =========================================================
+   BLUI WORKSPACE UI V2
+   ========================================================= */
+
+:root {
+  --blui-primary: #2563eb;
+  --blui-primary-dark: #1d4ed8;
+  --blui-bg: #f7f9fc;
+  --blui-border: #e5eaf2;
+  --blui-text: #0f172a;
+  --blui-muted: #64748b;
+}
+
+html,
+body {
+  background: var(--blui-bg);
+}
+
+.blui-app {
+  min-height: 100vh;
+  background:
+    radial-gradient(
+      circle at 70% -10%,
+      rgba(37,99,235,.055),
+      transparent 28%
+    ),
+    #f7f9fc;
+}
+
+.blui-main {
+  min-width: 0;
+}
+
+.blui-topbar {
+  height: 68px;
+  background: rgba(255,255,255,.94);
+  border-bottom: 1px solid var(--blui-border);
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  backdrop-filter: blur(16px);
+}
+
+.blui-topbar-inner {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 38px;
+  max-width: 1440px;
+  margin: 0 auto;
+}
+
+.blui-topbar-title {
+  display: flex;
+  align-items: baseline;
+  gap: 9px;
+  font-size: 13px;
+  color: #0f172a;
+}
+
+.blui-topbar-title small {
+  color: #94a3b8;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.blui-topbar-status {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.blui-topbar-status i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #22c55e;
+  box-shadow: 0 0 0 4px rgba(34,197,94,.10);
+}
+
+.blui-content-inner {
+  width: min(100%, 1440px);
+  margin: 0 auto;
+  padding: 34px 38px 80px;
+}
+
+.blui-content .blui-card {
+  background: #fff;
+  border: 1px solid var(--blui-border);
+  border-radius: 16px;
+  box-shadow:
+    0 1px 2px rgba(15,23,42,.025),
+    0 8px 28px rgba(15,23,42,.035);
+}
+
+.blui-content input,
+.blui-content textarea,
+.blui-content select {
+  border: 1px solid #dbe3ef !important;
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: none !important;
+}
+
+.blui-content input:focus,
+.blui-content textarea:focus,
+.blui-content select:focus {
+  border-color: #60a5fa !important;
+  box-shadow: 0 0 0 3px rgba(37,99,235,.09) !important;
+}
+
+.blui-content table {
+  width: 100%;
+}
+
+.blui-content thead {
+  background: #f8fafc;
+}
+
+.blui-content thead th {
+  padding-top: 12px;
+  padding-bottom: 12px;
+  color: #64748b;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .07em;
+}
+
+.blui-content tbody td {
+  padding-top: 14px;
+  padding-bottom: 14px;
+  border-bottom-color: #eef2f7;
+}
+
+.blui-content tbody tr:hover {
+  background: #f8faff;
+}
+
+.blui-content button,
+.blui-content a {
+  transition:
+    background-color .16s ease,
+    border-color .16s ease,
+    color .16s ease,
+    transform .16s ease,
+    box-shadow .16s ease;
+}
+
+.blui-content button[class*="bg-blue-"],
+.blui-content a[class*="bg-blue-"],
+.blui-content button[class*="bg-brand-"],
+.blui-content a[class*="bg-brand-"] {
+  box-shadow: 0 5px 14px rgba(37,99,235,.14);
+}
+
+.blui-content button[class*="bg-blue-"]:hover,
+.blui-content a[class*="bg-blue-"]:hover,
+.blui-content button[class*="bg-brand-"]:hover,
+.blui-content a[class*="bg-brand-"]:hover {
+  transform: translateY(-1px);
+}
+
+.blui-section {
+  margin-top: 20px;
+  background: #fff;
+  border: 1px solid var(--blui-border);
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.blui-section-header {
+  padding: 18px 20px;
+  border-bottom: 1px solid #eef2f7;
+}
+
+.blui-section-header h2 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 750;
+}
+
+.blui-section-header p {
+  margin: 3px 0 0;
+  color: #94a3b8;
+  font-size: 11px;
+}
+
+.blui-menu-button {
+  display: none;
+}
+
+@media (max-width: 1023px) {
+  .blui-main {
+    padding-left: 0;
+  }
+
+  .blui-topbar {
+    padding-left: 64px;
+  }
+
+  .blui-topbar-inner {
+    padding: 0 20px 0 4px;
+  }
+
+  .blui-menu-button {
+    position: absolute;
+    left: 16px;
+    top: 14px;
+    width: 40px;
+    height: 40px;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    background: #fff;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    box-shadow: 0 4px 14px rgba(15,23,42,.06);
+  }
+
+  .blui-menu-button span {
+    width: 17px;
+    height: 2px;
+    border-radius: 2px;
+    background: #334155;
+  }
+
+  .blui-content-inner {
+    padding: 24px 20px 70px;
+  }
+}
+
+@media (max-width: 640px) {
+  .blui-topbar {
+    height: 60px;
+    padding-left: 58px;
+  }
+
+  .blui-topbar-inner {
+    padding-right: 14px;
+  }
+
+  .blui-topbar-title small,
+  .blui-topbar-status span {
+    display: none;
+  }
+
+  .blui-content-inner {
+    padding: 20px 14px 60px;
+  }
+
+  .blui-content h1 {
+    font-size: 24px !important;
+  }
+
+  .blui-content table {
+    min-width: 620px;
+  }
+
+  .blui-content [class*="overflow-x-auto"] {
+    -webkit-overflow-scrolling: touch;
+  }
+}
