@@ -4,9 +4,9 @@ import { api } from '../lib/api.js';
 import { supabase } from '../lib/supabaseClient.js';
 import { IconBolt } from '../components/Icons.jsx';
 
-const SUPABASE_URL = 'https://hckflwxnfcfbypmvdksy.supabase.co';
+const SUPABASE_URL = 'https://qtyxuicwoqvktiqzqniw.supabase.co';
 const ANON_KEY =
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhja2Zsd3huZmNmYnlwbXZka3N5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg2MTM0NjAsImV4cCI6MjEwNDE4OTQ2MH0.UJ2y1iGbirOTmN8uRDke-xwuunhnbv7WGzE1rU-T2Sg';
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF0eXh1aWN3b3F2a3RpcXpxbml3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODkxMTkwNzcsImV4cCI6MjEwNDY5NTA3M30.MCTinzxQDsieUmWqLJn4prle1ADDClsMW4WYT88EDiQ';
 
 async function buscarListasNumeros() {
   const { data: { session } } = await supabase.auth.getSession();
