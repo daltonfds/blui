@@ -1,28 +1,63 @@
 import { supabase } from './supabaseClient.js';
 
-const API_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:4000' : 'https://blui-backend.onrender.com');
+const API_URL =
+  import.meta.env.VITE_API_URL ||
+  (import.meta.env.DEV
+    ? 'http://localhost:4000'
+    : 'https://blui-backend.onrender.com');
 
 async function obterToken() {
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
+  let { data, error } = await supabase.auth.getSession();
 
-  return session?.access_token;
+  if (error) throw error;
+
+  let session = data?.session;
+
+  if (!session) {
+    return null;
+  }
+
+  const expiresAt = session.expires_at || 0;
+  const agora = Math.floor(Date.now() / 1000);
+
+  if (expiresAt && expiresAt - agora < 120) {
+    const renovacao = await supabase.auth.refreshSession();
+
+    if (!renovacao.error && renovacao.data?.session) {
+      session = renovacao.data.session;
+    }
+  }
+
+  return session?.access_token || null;
 }
 
-async function pedido(caminho, opcoes = {}) {
+async function pedido(caminho, opcoes = {}, tentarNovamente = true) {
   const token = await obterToken();
+
+  if (!token) {
+    throw new Error('Sessão não encontrada. Entre novamente no BLUI.');
+  }
 
   const resposta = await fetch(`${API_URL}${caminho}`, {
     ...opcoes,
     headers: {
-      'Content-Type': 'application/json',
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(opcoes.body instanceof FormData
+        ? {}
+        : { 'Content-Type': 'application/json' }),
+      Authorization: `Bearer ${token}`,
       ...(opcoes.headers || {}),
     },
   });
 
   const corpo = await resposta.json().catch(() => ({}));
+
+  if (resposta.status === 401 && tentarNovamente) {
+    const renovacao = await supabase.auth.refreshSession();
+
+    if (!renovacao.error && renovacao.data?.session) {
+      return pedido(caminho, opcoes, false);
+    }
+  }
 
   if (!resposta.ok) {
     throw new Error(corpo.erro || 'Erro no pedido.');
@@ -34,9 +69,13 @@ async function pedido(caminho, opcoes = {}) {
 async function download(caminho, nomeArquivo = 'download') {
   const token = await obterToken();
 
+  if (!token) {
+    throw new Error('Sessão não encontrada. Entre novamente no BLUI.');
+  }
+
   const resposta = await fetch(`${API_URL}${caminho}`, {
     headers: {
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      Authorization: `Bearer ${token}`,
     },
   });
 
@@ -64,19 +103,19 @@ export const api = {
   post: (caminho, dados) =>
     pedido(caminho, {
       method: 'POST',
-      body: JSON.stringify(dados),
+      body: dados instanceof FormData ? dados : JSON.stringify(dados),
     }),
 
   put: (caminho, dados) =>
     pedido(caminho, {
       method: 'PUT',
-      body: JSON.stringify(dados),
+      body: dados instanceof FormData ? dados : JSON.stringify(dados),
     }),
 
   patch: (caminho, dados) =>
     pedido(caminho, {
       method: 'PATCH',
-      body: JSON.stringify(dados),
+      body: dados instanceof FormData ? dados : JSON.stringify(dados),
     }),
 
   del: (caminho) =>

@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import twilioRoutes from './routes/twilio.js';
+import numerosRoutes from './routes/numeros.js';
 
 import contactosRoutes from './routes/contactos.js';
 import produtosRoutes from './routes/produtos.js';
@@ -74,6 +75,7 @@ app.get('/', (req, res) => {
 // A assinatura NÃO bloqueia estas rotas durante o desenvolvimento.
 // A autenticação própria de cada rota continua responsável pelo acesso.
 app.use('/api/contactos', contactosRoutes);
+app.use('/api/numeros', numerosRoutes);
 app.use('/api/produtos', produtosRoutes);
 app.use('/api/campanhas', campanhasRoutes);
 app.use('/api/tracking', trackingRoutes);
