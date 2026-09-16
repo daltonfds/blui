@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '../lib/api.js';
+import LayoutApp from '../components/LayoutApp.jsx';
 
 export default function Conversas() {
   const [contactos, setContactos] = useState([]);
@@ -26,8 +27,9 @@ export default function Conversas() {
   }
 
   return (
-    <div className="min-h-screen bg-base-fog p-6 md:p-8">
-      <div className="mx-auto max-w-7xl">
+    <LayoutApp>
+      <div className="blui-screen blui-conversas">
+        <div className="blui-screen-container">
         <h1 className="text-3xl font-semibold">Conversas</h1>
         <p className="mt-2 text-sm text-base-ink/60">Central de conversas e atendimento.</p>
 
@@ -63,7 +65,8 @@ export default function Conversas() {
             )}
           </div>
         </div>
+        </div>
       </div>
-    </div>
+    </LayoutApp>
   );
 }

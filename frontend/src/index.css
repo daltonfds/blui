@@ -2736,3 +2736,505 @@ body {
     -webkit-overflow-scrolling: touch;
   }
 }
+
+
+/* =========================================================
+   BLUI WORKSPACE UI V3
+   REDESIGN COMPLETO DAS TELAS
+   ========================================================= */
+
+:root {
+  --blui-blue: #2563eb;
+  --blui-blue-dark: #1d4ed8;
+  --blui-bg: #f7f9fc;
+  --blui-surface: #ffffff;
+  --blui-border: #e6ebf2;
+  --blui-border-strong: #d9e1ec;
+  --blui-text: #0f172a;
+  --blui-muted: #64748b;
+  --blui-soft: #f8fafc;
+}
+
+/* ---------------------------------------------------------
+   BASE
+   --------------------------------------------------------- */
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  background: var(--blui-bg);
+  color: var(--blui-text);
+}
+
+.blui-content-inner {
+  max-width: 1440px;
+}
+
+/* ---------------------------------------------------------
+   TELAS
+   --------------------------------------------------------- */
+
+.blui-screen {
+  width: 100%;
+  min-width: 0;
+}
+
+.blui-screen-container {
+  width: 100%;
+  max-width: 1380px;
+  margin: 0 auto;
+}
+
+.blui-screen > h1,
+.blui-screen-container > h1 {
+  font-size: 26px;
+  line-height: 1.2;
+  font-weight: 750;
+  letter-spacing: -.025em;
+  color: var(--blui-text);
+}
+
+.blui-screen > p,
+.blui-screen-container > p {
+  color: var(--blui-muted);
+}
+
+/* ---------------------------------------------------------
+   CABEÇALHOS DE PÁGINA
+   --------------------------------------------------------- */
+
+.blui-content-inner > div > h1,
+.blui-content-inner > h1 {
+  letter-spacing: -.025em;
+}
+
+.blui-content-inner h1 {
+  color: var(--blui-text);
+  font-weight: 750;
+}
+
+.blui-content-inner h2 {
+  color: var(--blui-text);
+  letter-spacing: -.015em;
+}
+
+/* ---------------------------------------------------------
+   CARTÕES
+   Menos sombras e menos sensação de "dashboard cheio"
+   --------------------------------------------------------- */
+
+.blui-content .blui-card,
+.blui-content .bg-base-white.border,
+.blui-content .bg-white.border,
+.blui-content [class*="rounded-xl"][class*="border"],
+.blui-content [class*="rounded-lg"][class*="border"] {
+  border-color: var(--blui-border);
+  box-shadow: 0 1px 2px rgba(15,23,42,.025);
+}
+
+.blui-content .blui-card:hover {
+  box-shadow: 0 4px 16px rgba(15,23,42,.045);
+}
+
+/* ---------------------------------------------------------
+   BLOCOS / SEÇÕES
+   --------------------------------------------------------- */
+
+.blui-section {
+  background: var(--blui-surface);
+  border: 1px solid var(--blui-border);
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.blui-section-header {
+  padding: 18px 20px;
+  border-bottom: 1px solid #edf1f6;
+}
+
+.blui-section-header h2 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 750;
+}
+
+.blui-section-header p {
+  margin-top: 4px;
+  color: #94a3b8;
+  font-size: 11px;
+}
+
+/* ---------------------------------------------------------
+   BOTÕES
+   --------------------------------------------------------- */
+
+.blui-content button {
+  font-weight: 600;
+}
+
+.blui-content button[class*="bg-blue-"],
+.blui-content button[class*="bg-brand-"] {
+  box-shadow: 0 3px 10px rgba(37,99,235,.12);
+}
+
+.blui-content button[class*="bg-blue-"]:hover,
+.blui-content button[class*="bg-brand-"]:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 5px 14px rgba(37,99,235,.17);
+}
+
+.blui-content button[class*="border"] {
+  border-color: var(--blui-border-strong);
+  background: #fff;
+}
+
+/* ---------------------------------------------------------
+   INPUTS
+   --------------------------------------------------------- */
+
+.blui-content input,
+.blui-content textarea,
+.blui-content select {
+  border: 1px solid var(--blui-border-strong) !important;
+  border-radius: 9px;
+  background: #fff;
+  color: var(--blui-text);
+  box-shadow: none !important;
+}
+
+.blui-content input::placeholder,
+.blui-content textarea::placeholder {
+  color: #a1adbd;
+}
+
+.blui-content input:focus,
+.blui-content textarea:focus,
+.blui-content select:focus {
+  outline: none;
+  border-color: #60a5fa !important;
+  box-shadow: 0 0 0 3px rgba(37,99,235,.08) !important;
+}
+
+/* ---------------------------------------------------------
+   TABELAS
+   --------------------------------------------------------- */
+
+.blui-content table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.blui-content thead {
+  background: #f8fafc;
+}
+
+.blui-content thead th {
+  padding-top: 11px;
+  padding-bottom: 11px;
+  color: #64748b;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .055em;
+  text-transform: uppercase;
+  border-bottom: 1px solid #e9eef5;
+}
+
+.blui-content tbody td {
+  padding-top: 13px;
+  padding-bottom: 13px;
+  border-bottom-color: #edf1f6;
+}
+
+.blui-content tbody tr {
+  transition: background .14s ease;
+}
+
+.blui-content tbody tr:hover {
+  background: #f8faff;
+}
+
+.blui-content tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+/* ---------------------------------------------------------
+   BADGES / ESTADOS
+   --------------------------------------------------------- */
+
+.blui-content [class*="rounded-xs"][class*="text-xs"],
+.blui-content [class*="rounded-full"][class*="text-xs"] {
+  font-weight: 650;
+}
+
+/* ---------------------------------------------------------
+   MODAIS
+   --------------------------------------------------------- */
+
+.blui-content .fixed.inset-0 {
+  backdrop-filter: blur(3px);
+}
+
+.blui-content .fixed.inset-0 > div {
+  border-radius: 16px;
+  border-color: var(--blui-border);
+  box-shadow:
+    0 20px 60px rgba(15,23,42,.15),
+    0 3px 12px rgba(15,23,42,.05);
+}
+
+/* ---------------------------------------------------------
+   CONVERSAS
+   --------------------------------------------------------- */
+
+.blui-conversas {
+  min-height: calc(100vh - 150px);
+}
+
+.blui-conversas .blui-screen-container {
+  max-width: 1380px;
+}
+
+.blui-conversas .grid {
+  border-color: var(--blui-border) !important;
+  border-radius: 16px !important;
+  box-shadow: 0 2px 12px rgba(15,23,42,.035);
+}
+
+.blui-conversas .grid > div:first-child {
+  background: #fbfcfe;
+}
+
+.blui-conversas .grid > div:first-child button {
+  transition: background .14s ease;
+}
+
+.blui-conversas .grid > div:first-child button:hover {
+  background: #f1f5f9 !important;
+}
+
+.blui-conversas .grid > div:last-child {
+  background: #fff;
+}
+
+.blui-conversas form {
+  background: #fff;
+}
+
+.blui-conversas form button {
+  min-width: 84px;
+}
+
+.blui-conversas input {
+  background: #f8fafc;
+}
+
+/* ---------------------------------------------------------
+   CONTACTOS
+   --------------------------------------------------------- */
+
+.blui-content table + * {
+  max-width: 100%;
+}
+
+.blui-content [class*="overflow-x-auto"] {
+  border-radius: 12px;
+}
+
+/* ---------------------------------------------------------
+   FUNIL
+   --------------------------------------------------------- */
+
+.blui-content .grid {
+  min-width: 0;
+}
+
+.blui-content textarea {
+  line-height: 1.55;
+}
+
+.blui-content label {
+  color: #334155;
+  font-size: 12px;
+  font-weight: 650;
+}
+
+/* ---------------------------------------------------------
+   TREINO / PRODUTOS
+   --------------------------------------------------------- */
+
+.blui-content form {
+  max-width: 100%;
+}
+
+.blui-content form > div {
+  min-width: 0;
+}
+
+/* ---------------------------------------------------------
+   REMARKETING
+   --------------------------------------------------------- */
+
+.blui-content [class*="bg-green-50"] {
+  border-color: #d1fae5;
+}
+
+.blui-content [class*="bg-red-50"] {
+  border-color: #fee2e2;
+}
+
+/* ---------------------------------------------------------
+   NÚMEROS
+   --------------------------------------------------------- */
+
+.blui-content [class*="divide-y"] > * {
+  border-color: #edf1f6;
+}
+
+/* ---------------------------------------------------------
+   WHATSAPP
+   --------------------------------------------------------- */
+
+.blui-content [class*="bg-emerald-"] {
+  border-color: #d1fae5;
+}
+
+/* ---------------------------------------------------------
+   ASSINATURA
+   --------------------------------------------------------- */
+
+.blui-content [class*="ring-"] {
+  --tw-ring-color: rgba(37,99,235,.18);
+}
+
+/* ---------------------------------------------------------
+   SUPORTE
+   --------------------------------------------------------- */
+
+.blui-content details {
+  border: 1px solid var(--blui-border);
+  border-radius: 12px;
+  background: #fff;
+  overflow: hidden;
+}
+
+.blui-content details summary {
+  cursor: pointer;
+  padding: 16px 18px;
+  font-weight: 650;
+}
+
+.blui-content details > div {
+  border-top: 1px solid #edf1f6;
+}
+
+/* ---------------------------------------------------------
+   ADMIN
+   --------------------------------------------------------- */
+
+.blui-content pre {
+  border-radius: 10px;
+  border: 1px solid var(--blui-border);
+}
+
+/* ---------------------------------------------------------
+   SCROLLBARS
+   --------------------------------------------------------- */
+
+.blui-content ::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+
+.blui-content ::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.blui-content ::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 99px;
+}
+
+/* ---------------------------------------------------------
+   MOBILE
+   --------------------------------------------------------- */
+
+@media (max-width: 1023px) {
+  .blui-content-inner {
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+
+  .blui-content-inner h1 {
+    font-size: 24px !important;
+  }
+
+  .blui-conversas .grid {
+    min-height: calc(100vh - 150px);
+  }
+}
+
+@media (max-width: 640px) {
+  .blui-content-inner {
+    padding: 20px 14px 60px;
+  }
+
+  .blui-content-inner h1 {
+    font-size: 22px !important;
+  }
+
+  .blui-content-inner h2 {
+    font-size: 15px;
+  }
+
+  .blui-content table {
+    min-width: 680px;
+  }
+
+  .blui-content [class*="overflow-x-auto"] {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .blui-content form {
+    width: 100%;
+  }
+
+  .blui-conversas {
+    min-height: calc(100vh - 100px);
+  }
+
+  .blui-conversas .grid {
+    grid-template-columns: 1fr !important;
+    min-height: auto;
+  }
+
+  .blui-conversas .grid > div:first-child {
+    max-height: 260px;
+    overflow-y: auto;
+    border-right: 0;
+    border-bottom: 1px solid var(--blui-border);
+  }
+
+  .blui-conversas .grid > div:last-child {
+    min-height: 430px;
+  }
+
+  .blui-conversas form {
+    padding: 12px !important;
+  }
+
+  .blui-conversas form input {
+    min-width: 0;
+  }
+
+  .blui-conversas form button {
+    min-width: 70px;
+    padding-left: 14px !important;
+    padding-right: 14px !important;
+  }
+}
+
