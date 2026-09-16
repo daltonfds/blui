@@ -8,38 +8,110 @@ export function AuthProvider({ children }) {
   const [carregando, setCarregando] = useState(true);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      setSessao(data.session);
-      setCarregando(false);
-    });
+    let ativo = true;
 
-    const { data: assinatura } = supabase.auth.onAuthStateChange((_evento, novaSessao) => {
-      setSessao(novaSessao);
-    });
+    async function restaurarSessao() {
+      try {
+        const { data, error } = await supabase.auth.getSession();
 
-    return () => assinatura.subscription.unsubscribe();
+        if (error) {
+          console.error('[AUTH] getSession:', error);
+        }
+
+        if (!ativo) return;
+
+        let sessaoAtual = data?.session || null;
+
+        // Se existir sessão, garante que o token ainda é utilizável.
+        if (sessaoAtual?.access_token) {
+          const expiracao = sessaoAtual.expires_at || 0;
+          const agora = Math.floor(Date.now() / 1000);
+
+          if (expiracao && expiracao - agora < 120) {
+            const renovacao = await supabase.auth.refreshSession();
+
+            if (!renovacao.error && renovacao.data?.session) {
+              sessaoAtual = renovacao.data.session;
+            }
+          }
+        }
+
+        if (ativo) {
+          setSessao(sessaoAtual);
+          setCarregando(false);
+        }
+      } catch (error) {
+        console.error('[AUTH] restauração:', error);
+
+        if (ativo) {
+          setSessao(null);
+          setCarregando(false);
+        }
+      }
+    }
+
+    restaurarSessao();
+
+    const { data: assinatura } = supabase.auth.onAuthStateChange(
+      async (_evento, novaSessao) => {
+        if (!ativo) return;
+
+        setSessao(novaSessao);
+
+        // Mantém o estado de carregamento encerrado somente
+        // depois que o Supabase informar a sessão.
+        setCarregando(false);
+      }
+    );
+
+    return () => {
+      ativo = false;
+      assinatura?.subscription?.unsubscribe();
+    };
   }, []);
 
   async function entrar(email, senha) {
-    const { error } = await supabase.auth.signInWithPassword({ email, password: senha });
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password: senha,
+    });
+
     if (error) throw error;
+
+    setSessao(data?.session || null);
+    return data;
   }
 
   async function registar(email, senha, nome) {
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password: senha,
-      options: { data: { nome } },
+      options: {
+        data: { nome },
+      },
     });
+
     if (error) throw error;
+
+    setSessao(data?.session || null);
+    return data;
   }
 
   async function sair() {
     await supabase.auth.signOut();
+    setSessao(null);
   }
 
   return (
-    <AuthContext.Provider value={{ sessao, carregando, entrar, registar, sair }}>
+    <AuthContext.Provider
+      value={{
+        sessao,
+        carregando,
+        entrar,
+        registar,
+        sair,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

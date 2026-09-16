@@ -7,19 +7,32 @@ const API_URL =
     : 'https://blui-backend.onrender.com');
 
 async function obterToken() {
-  let { data, error } = await supabase.auth.getSession();
+  // Primeiro tenta obter a sessão atual.
+  let resultado = await supabase.auth.getSession();
 
-  if (error) throw error;
+  if (resultado.error) {
+    console.warn('[API] getSession:', resultado.error.message);
+  }
 
-  let session = data?.session;
+  let session = resultado.data?.session || null;
+
+  if (!session) {
+    // Dá uma pequena oportunidade ao Supabase de restaurar
+    // a sessão persistida antes de desistir.
+    await new Promise(resolve => setTimeout(resolve, 150));
+
+    resultado = await supabase.auth.getSession();
+    session = resultado.data?.session || null;
+  }
 
   if (!session) {
     return null;
   }
 
-  const expiresAt = session.expires_at || 0;
   const agora = Math.floor(Date.now() / 1000);
+  const expiresAt = session.expires_at || 0;
 
+  // Renova antecipadamente.
   if (expiresAt && expiresAt - agora < 120) {
     const renovacao = await supabase.auth.refreshSession();
 
@@ -32,7 +45,7 @@ async function obterToken() {
 }
 
 async function pedido(caminho, opcoes = {}, tentarNovamente = true) {
-  const token = await obterToken();
+  let token = await obterToken();
 
   if (!token) {
     throw new Error('Sessão não encontrada. Entre novamente no BLUI.');
@@ -51,11 +64,25 @@ async function pedido(caminho, opcoes = {}, tentarNovamente = true) {
 
   const corpo = await resposta.json().catch(() => ({}));
 
+  // Token expirado ou rejeitado pelo backend:
+  // renova e repete a mesma operação uma única vez.
   if (resposta.status === 401 && tentarNovamente) {
     const renovacao = await supabase.auth.refreshSession();
 
     if (!renovacao.error && renovacao.data?.session) {
-      return pedido(caminho, opcoes, false);
+      token = renovacao.data.session.access_token;
+
+      return pedido(
+        caminho,
+        {
+          ...opcoes,
+          headers: {
+            ...(opcoes.headers || {}),
+            Authorization: `Bearer ${token}`,
+          },
+        },
+        false
+      );
     }
   }
 

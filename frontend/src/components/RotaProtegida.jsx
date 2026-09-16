@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 
@@ -7,15 +7,8 @@ export default function RotaProtegida({
   ignorarAssinatura = false,
 }) {
   const { sessao, carregando } = useAuth();
-  const [verificando, setVerificando] = useState(true);
 
-  useEffect(() => {
-    if (carregando) return;
-
-    setVerificando(false);
-  }, [carregando, sessao]);
-
-  if (carregando || verificando) {
+  if (carregando) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-base-fog">
         <div className="text-sm text-base-ink/60">
@@ -25,7 +18,7 @@ export default function RotaProtegida({
     );
   }
 
-  if (!sessao?.user?.id) {
+  if (!sessao?.user?.id || !sessao?.access_token) {
     return <Navigate to="/entrar" replace />;
   }
 
