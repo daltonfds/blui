@@ -3,6 +3,7 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 import { supabase } from '../lib/supabaseClient.js';
 import Wordmark from './Wordmark.jsx';
+
 import {
   IconGrid,
   IconPeople,
@@ -10,17 +11,34 @@ import {
   IconBolt,
   IconSettings,
   IconLogout,
+  IconChart,
+  IconWhatsapp,
 } from './Icons.jsx';
 
-const itens = [
-  { to: '/painel', label: 'Painel', Icon: IconGrid },
-  { to: '/conversas', label: 'Conversas', Icon: IconPeople },
-  { to: '/contactos', label: 'Contactos', Icon: IconPeople },
-  { to: '/remarketing', label: 'Remarketing', Icon: IconBolt },
-  { to: '/funil', label: 'Funil', Icon: IconLayers },
-  { to: '/treino', label: 'Treino do chatbot', Icon: IconSettings },
-  { to: '/produtos', label: 'Produtos', Icon: IconLayers },
-  { to: '/numeros', label: 'Números', Icon: IconLayers },
+const grupos = [
+  {
+    titulo: 'PRINCIPAL',
+    itens: [
+      { to: '/painel', label: 'Visão geral', Icon: IconGrid },
+      { to: '/conversas', label: 'Conversas', Icon: IconWhatsapp },
+      { to: '/contactos', label: 'Contactos', Icon: IconPeople },
+    ],
+  },
+  {
+    titulo: 'VENDAS & AUTOMAÇÃO',
+    itens: [
+      { to: '/remarketing', label: 'Remarketing', Icon: IconBolt },
+      { to: '/funil', label: 'Funil', Icon: IconLayers },
+      { to: '/treino', label: 'Treino do chatbot', Icon: IconSettings },
+    ],
+  },
+  {
+    titulo: 'NEGÓCIO',
+    itens: [
+      { to: '/produtos', label: 'Produtos', Icon: IconLayers },
+      { to: '/numeros', label: 'Números', Icon: IconChart },
+    ],
+  },
 ];
 
 export default function Sidebar({ open = false, onClose = () => {} }) {
@@ -30,10 +48,14 @@ export default function Sidebar({ open = false, onClose = () => {} }) {
 
   useEffect(() => {
     let ativo = true;
+
     supabase.rpc('is_admin').then(({ data }) => {
       if (ativo) setAdmin(Boolean(data));
     });
-    return () => { ativo = false; };
+
+    return () => {
+      ativo = false;
+    };
   }, []);
 
   async function terminarSessao() {
@@ -42,6 +64,13 @@ export default function Sidebar({ open = false, onClose = () => {} }) {
     onClose();
   }
 
+  const linkClass = ({ isActive }) =>
+    `group flex items-center gap-3 rounded-xl px-3 py-2.5 text-[13px] font-medium transition-all ${
+      isActive
+        ? 'bg-blue-50 text-blue-700'
+        : 'text-slate-600 hover:bg-slate-50 hover:text-slate-950'
+    }`;
+
   return (
     <>
       {open && (
@@ -49,55 +78,101 @@ export default function Sidebar({ open = false, onClose = () => {} }) {
           type="button"
           aria-label="Fechar menu"
           onClick={onClose}
-          className="fixed inset-0 z-40 bg-black/20"
+          className="fixed inset-0 z-40 bg-slate-950/25 backdrop-blur-sm lg:hidden"
         />
       )}
 
-      <aside className={`fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-black/5 bg-base-white px-3 py-5 shadow-xl transition-transform duration-200 ease-out ${open ? "translate-x-0" : "-translate-x-full"}`}>
-      <div className="px-3 mb-7">
-        <Wordmark />
-        <p className="mt-2 text-xs text-base-ink/40">Versão 0.5</p>
-      </div>
+      <aside
+        className={`
+          fixed inset-y-0 left-0 z-50
+          flex w-[248px] flex-col
+          border-r border-slate-200
+          bg-white px-3 py-5
+          shadow-xl shadow-slate-900/5
+          transition-transform duration-200
+          lg:translate-x-0
+          ${open ? 'translate-x-0' : '-translate-x-full'}
+        `}
+      >
+        <div className="flex items-center justify-between px-3 pb-7">
+          <div>
+            <Wordmark />
 
-      <nav className="flex-1 space-y-1">
-        {itens.map(({ to, label, Icon }) => (
-          <NavLink
-            key={to}
-            to={to}
-            end
-            className={({ isActive }) =>
-              `flex items-center gap-3 rounded-xs px-3 py-2.5 text-sm font-medium transition-colors ${
-                isActive
-                  ? 'bg-brand-50 text-brand-700'
-                  : 'text-base-ink/65 hover:bg-base-fog hover:text-base-ink'
-              }`
-            }
+            <p className="mt-1.5 text-[9px] font-semibold tracking-[0.14em] text-slate-400">
+              WORKSPACE · V0.5
+            </p>
+          </div>
+
+          <button
+            onClick={onClose}
+            className="rounded-lg px-2 py-1 text-xl text-slate-400 hover:bg-slate-50 lg:hidden"
+            aria-label="Fechar menu"
           >
-            <Icon />
-            <span>{label}</span>
-          </NavLink>
-        ))}
+            ×
+          </button>
+        </div>
 
-        <div className="pt-6">
-          <p className="px-3 mb-2 text-[10px] font-bold tracking-[0.14em] text-base-ink/35">
-            CONTA
-          </p>
+        <nav className="min-h-0 flex-1 space-y-6 overflow-y-auto px-1">
+          {grupos.map((grupo) => (
+            <div key={grupo.titulo}>
+              <p className="mb-2 px-3 text-[9px] font-bold tracking-[0.16em] text-slate-400">
+                {grupo.titulo}
+              </p>
 
+              <div className="space-y-1">
+                {grupo.itens.map(({ to, label, Icon }) => (
+                  <NavLink
+                    key={to}
+                    to={to}
+                    end
+                    onClick={onClose}
+                    className={linkClass}
+                  >
+                    {({ isActive }) => (
+                      <>
+                        <span
+                          className={`
+                            flex h-8 w-8 shrink-0 items-center justify-center
+                            rounded-lg
+                            ${
+                              isActive
+                                ? 'bg-white shadow-sm'
+                                : 'bg-slate-50'
+                            }
+                          `}
+                        >
+                          <Icon
+                            width="17"
+                            height="17"
+                          />
+                        </span>
+
+                        <span>{label}</span>
+                      </>
+                    )}
+                  </NavLink>
+                ))}
+              </div>
+            </div>
+          ))}
+        </nav>
+
+        <div className="mt-4 border-t border-slate-100 pt-3">
           <NavLink
             to="/assinatura"
             onClick={onClose}
-            className="flex items-center gap-3 rounded-xs px-3 py-2.5 text-sm font-medium text-base-ink/65 hover:bg-base-fog"
+            className={linkClass}
           >
-            <IconSettings />
+            <IconSettings width="18" height="18" />
             <span>Assinatura</span>
           </NavLink>
 
           <NavLink
             to="/suporte"
             onClick={onClose}
-            className="flex items-center gap-3 rounded-xs px-3 py-2.5 text-sm font-medium text-base-ink/65 hover:bg-base-fog"
+            className={linkClass}
           >
-            <IconPeople />
+            <IconPeople width="18" height="18" />
             <span>Suporte</span>
           </NavLink>
 
@@ -105,22 +180,27 @@ export default function Sidebar({ open = false, onClose = () => {} }) {
             <NavLink
               to="/admin"
               onClick={onClose}
-              className="flex items-center gap-3 rounded-xs px-3 py-2.5 text-sm font-medium text-base-ink/65 hover:bg-base-fog"
+              className={linkClass}
             >
-              <IconSettings />
+              <IconSettings width="18" height="18" />
               <span>Administração</span>
             </NavLink>
           )}
-        </div>
-      </nav>
 
-      <button
-        onClick={terminarSessao}
-        className="mt-4 border-t border-black/5 pt-4 w-full flex items-center gap-3 rounded-xs px-3 py-2.5 text-sm font-medium text-base-ink/60 hover:bg-base-fog"
-      >
-        <IconLogout />
-        <span>Terminar sessão</span>
-      </button>
+          <button
+            onClick={terminarSessao}
+            className="
+              mt-2 flex w-full items-center gap-3
+              rounded-xl px-3 py-2.5
+              text-[13px] font-medium text-slate-500
+              transition-colors
+              hover:bg-red-50 hover:text-red-600
+            "
+          >
+            <IconLogout width="18" height="18" />
+            <span>Terminar sessão</span>
+          </button>
+        </div>
       </aside>
     </>
   );
