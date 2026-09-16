@@ -31,6 +31,9 @@ async function validarProduto(produtoId, userId) {
 
 router.get('/', async (req, res) => {
   try {
+    if (!req.user?.id) {
+      return res.status(401).json({ erro: 'Sessão não encontrada.' });
+    }
     const { data, error } = await supabase
       .from('funnels')
       .select(`
@@ -67,7 +70,11 @@ router.get('/', async (req, res) => {
 
 router.post('/', async (req, res) => {
   try {
-    const userId = req.user.id;
+    const userId = req.user?.id;
+
+    if (!userId) {
+      return res.status(401).json({ erro: 'Sessão não encontrada.' });
+    }
     const produtoId = texto(req.body?.produto_id) || null;
 
     if (produtoId && !(await validarProduto(produtoId, userId))) {

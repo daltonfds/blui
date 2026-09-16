@@ -112,7 +112,7 @@ const [funilId, setFunilId] = useState(null);
         setSelecionada(lista[0]?.id || null);
       }
     } catch (e) {
-      setErro(e.message || 'Não foi possível carregar o funil.');
+      console.error('[Funil] erro ao carregar:', e);
 
       const locais = JSON.parse(
         localStorage.getItem('blui_funil') || 'null'
@@ -122,6 +122,12 @@ const [funilId, setFunilId] = useState(null);
 
       setEtapas(lista);
       setSelecionada(lista[0]?.id || null);
+
+      setErro(
+        e?.message?.includes('Sessão')
+          ? 'A sessão expirou. Entre novamente para sincronizar o funil.'
+          : 'Não foi possível sincronizar o funil. Os dados locais continuam disponíveis.'
+      );
     } finally {
       setCarregando(false);
     }
@@ -195,7 +201,7 @@ const [funilId, setFunilId] = useState(null);
 
         const ids = etapas
           .map((e) => e.id)
-          .filter((id) => !String(id).startsWith('local-'));
+          .filter((stageId) => !String(stageId).startsWith('local-'));
 
         if (ids.length) {
           await api.put(
@@ -241,7 +247,7 @@ const [funilId, setFunilId] = useState(null);
 
   const adicionarEtapa = () => {
     const nova = {
-      id: `local-${Date.now()}`,
+      id: `local-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
       nome: 'Nova etapa',
       descricao: '',
       objetivo: '',
