@@ -41,7 +41,6 @@ router.get('/', async (req, res) => {
         produtos:produto_id(
           id,
           nome_produto,
-          preco,
           custo,
           ativo
         ),
