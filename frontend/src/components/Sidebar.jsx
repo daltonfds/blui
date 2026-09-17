@@ -42,21 +42,33 @@ const grupos = [
 ];
 
 export default function Sidebar({ open = false, onClose = () => {} }) {
-  const { sair } = useAuth();
+  const { sessao, sair } = useAuth();
   const navigate = useNavigate();
   const [admin, setAdmin] = useState(false);
 
   useEffect(() => {
     let ativo = true;
 
-    supabase.rpc('is_admin').then(({ data }) => {
-      if (ativo) setAdmin(Boolean(data));
-    });
+    if (!sessao?.user?.id) {
+      setAdmin(false);
+      return () => {
+        ativo = false;
+      };
+    }
+
+    supabase
+      .from('profiles')
+      .select('is_admin')
+      .eq('id', sessao.user.id)
+      .maybeSingle()
+      .then(({ data, error }) => {
+        if (ativo) setAdmin(!error && Boolean(data?.is_admin));
+      });
 
     return () => {
       ativo = false;
     };
-  }, []);
+  }, [sessao]);
 
   async function terminarSessao() {
     await sair();

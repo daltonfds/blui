@@ -3,9 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import LayoutApp from '../components/LayoutApp.jsx';
 import { api } from '../lib/api.js';
 import { supabase } from '../lib/supabaseClient.js';
+import { useAuth } from '../context/AuthContext.jsx';
 
 export default function Admin() {
   const navigate = useNavigate();
+  const { sessao } = useAuth();
 
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState('');
@@ -16,9 +18,18 @@ export default function Admin() {
   const [aba, setAba] = useState('resumo');
 
   async function verificarAdmin() {
-    const { data, error } = await supabase.rpc('is_admin');
+    if (!sessao?.user?.id) {
+      navigate('/painel', { replace: true });
+      return false;
+    }
 
-    if (error || !data) {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('is_admin')
+      .eq('id', sessao.user.id)
+      .maybeSingle();
+
+    if (error || !data?.is_admin) {
       navigate('/painel', { replace: true });
       return false;
     }
@@ -55,7 +66,7 @@ export default function Admin() {
 
   useEffect(() => {
     carregar();
-  }, []);
+  }, [sessao]);
 
   async function aprovar(id) {
     try {
